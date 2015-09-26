@@ -7,14 +7,13 @@ type map = End of treasure
 		| Guide of string * map
 
 (* this is my type*)
-type term = Constant of treasure 
-			| Variable of string 
+type term = Variable of string 
 			| Term of term * term
 
 type equation = Equ of term * term
 
 exception Error of string
-exception Impossible
+exception IMPOSSIBLE
 
 let rec inner_list_find lst element num =
 	match lst with
@@ -125,7 +124,6 @@ let rec find_variables : term -> term list =
 		| Term (term1, term2) -> 
 			(find_variables term1)@(find_variables term2)
 		| Variable str -> [term]
-		| Constant treasure -> []
 
 let rec collect_all_variables : equation list -> term list =
 	fun equations ->
@@ -166,12 +164,13 @@ let rec ready : equation list -> (term * term) list -> (term * term) list =
 			| Equ (Variable str, Term (term1, term2)) ->
 				let term = Term (term1, term2) in
 				let variable = Variable str in
-				if List.mem variable (find_variables term) then raise Impossible
+				if List.mem variable (find_variables term) then raise IMPOSSIBLE
 				else 
 					let sub = make_substitution hd in
 					let new_equations = update_equation sub tail in
 					let new_substitutions = (variable, term)::(update_substitution sub substitutions) in
 					(ready new_equations new_substitutions))
+
 
 let rec getReady : map -> key list =
 	fun map ->
