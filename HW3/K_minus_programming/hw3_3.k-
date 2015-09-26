@@ -1,0 +1,129 @@
+(*leaf don't have child tree. not empty
+	empty tree is tree but leaf;s left and right is unit*)
+let proc leaf(n) = {tree := true, ltree := {tree := false}, value := n, rtree := {tree := false}} in
+
+(*rtree is empty tree*)
+let proc makeLtree(n, left_tree) =
+	{tree := true, ltree := left_tree, value := n, rtree := {tree := true, value := {}}} in
+
+(*ltree is empty tree*)
+let proc makeRtree(n, right_tree) =
+	{tree := true, ltree := {tree := true, value := {}}, value := n, rtree := right_tree} in
+
+let proc makeTree(n, left_tree, right_tree) =
+	{tree := true, ltree := left_tree, value := n, rtree := right_tree} in
+
+let proc isEmpty(tr) =
+	if (tr.tree = true) then (if tr.value = unit then true else false)
+	else false in
+
+let proc rTree(tr) = tr.rtree in
+
+let proc lTree(tr) = tr.ltree in
+
+let proc nodeVal(tr) = tr.value in
+
+let proc dft(tr) =
+	if tr.tree = true then
+		(write nodeVal(tr);
+		if (not isEmpty(lTree(tr))) then dft(tr.ltree)
+		else unit;
+		if (not isEmpty(rTree(tr))) then dft(tr.rtree)
+		else unit)
+	else unit in
+
+(********************stack**************************)
+
+let proc newStack(x) = {top := unit} in
+
+let proc isEmptystack(st) = st.top = unit in
+
+let proc stack_push(n, st) = {top := n, tail := st} in
+
+let proc stack_top(st) =
+	if isEmptystack(st) then unit
+	else st.top in
+
+let proc stack_pop(st) =
+	if isEmptystack(st) then unit
+	else st.tail in
+
+let proc stack_reverse(new_st, st) =
+	if (not isEmptystack(st)) 
+	then stack_reverse(stack_push(stack_top(st), new_st), stack_pop(st))
+	else new_st in
+
+(**************queue************)
+
+let proc emptyQ(x) =
+	{front_stack := newStack(x), back_stack := newStack(x)} in
+
+let proc isEmptyQueue(qu) =
+	if isEmptystack(qu.front_stack) then
+		if isEmptystack(qu.back_stack) then true
+		else false
+	else false in
+
+let proc enQ(qu, n) =
+	if isEmptystack(qu.front_stack) then
+		if isEmptystack(qu.back_stack) then 
+			{front_stack := qu.front_stack, back_stack := stack_push(n, qu.back_stack)}
+		else {front_stack := stack_push(n, qu.front_stack), back_stack := qu.back_stack}
+	else {front_stack := stack_push(n, qu.front_stack), back_stack := qu.back_stack} in
+
+let proc deQ(qu) =
+	if isEmptystack(qu.front_stack) then
+		if isEmptystack(qu.back_stack) then unit
+		else {head:= stack_top(qu.back_stack), rest_queue := {front_stack := qu.front_stack, back_stack := stack_pop(qu.back_stack)}}
+	else 
+		if isEmptystack(qu.back_stack) then deQ({front_stack := newStack(0), back_stack := stack_reverse(newStack(0), qu.front_stack)})
+		else {head:= stack_top(qu.back_stack), rest_queue := {front_stack := qu.front_stack, back_stack := stack_pop(qu.back_stack)}} in
+
+(******************************************)
+let proc bft(tr) =
+	let treeQ := emptyQ(0) in
+	treeQ := enQ(treeQ, tr);
+	while (not isEmptyQueue(treeQ)) do(
+		let tmp := deQ(treeQ) in
+		let cur_tr := tmp.head in
+		treeQ := tmp.rest_queue;
+		write nodeVal(cur_tr);
+		(if lTree(cur_tr).tree then
+			if (not isEmpty(lTree(cur_tr))) then treeQ := enQ(treeQ, lTree(cur_tr))
+			else unit
+		else unit);
+		(if rTree(cur_tr).tree then
+			if (not isEmpty(rTree(cur_tr))) then treeQ := enQ(treeQ, rTree(cur_tr))
+			else unit
+		else unit)
+	) in
+
+
+let tree1 := leaf (8) in 
+let tree2 := leaf (5) in
+let tree3 := leaf (3) in
+let tree4 := makeTree (9, tree2, tree3) in 
+let tree5 := makeTree (7, tree4, tree4) in
+let tree6 := makeLtree (2, tree1) in
+let tree7 := makeTree (1, tree3, tree5) in
+let tree8 := makeRtree (4, tree7) in
+let tree9 := makeTree (6, tree4, tree4) in			(*  먯닔,  뺣떟 *)
+(*let stack1 := newStack(0) in
+let stack2 := stack_push(tree9, stack1) in*)
+
+(*write (if isEmpty(rTree(makeLtree (1, leaf (2)))) then 1 else 0);	(* 0.5, 1 *)
+write (if isEmpty(lTree(makeRtree (1, leaf (2)))) then 1 else 0);
+write (if isEmpty (tree2) then 1 else 0);			(* 0.5, 0 *)
+write (if isEmpty (tree9) then 1 else 0);			(* 0.5, 0 *)
+write (nodeVal (tree3));							(* 0.5, 3 *)
+write (nodeVal (tree5));							(* 0.5, 7 *)
+write (nodeVal (tree7));							(* 0.5, 1 *)
+dft (tree1);										(* 1.0, 8 *)
+dft (tree8);										(* 1.0, 4137953953 *)
+dft (tree9);										(* 1.0, 6953953 *)
+bft (tree2);										(* 1.0, 5 *)
+bft (tree6);										(* 1.0, 28 *)
+bft (tree7)											(* 1.0, 137995353 *)*)
+(*bft( makeTree( 1, makeTree (2, leaf(4), makeLtree(5, leaf(6))), makeTree( 3, makeRtree( 7, makeRtree( 9, leaf(10))), leaf(8)))) *)
+
+bft(makeRtree(3, makeRtree(1, makeRtree(2, makeTree(6, leaf(4), leaf(5))))))

@@ -1,0 +1,111 @@
+type treasure = StarBox | NameBox of string
+
+type key = Bar | Node of key * key
+
+type map = End of treasure
+		| Branch of map * map
+		| Guide of string * map
+
+(* this is my type*)
+type term = Constant of treasure 
+			| Variable of string 
+			| Term of term * term
+
+type equation = Equ of term * term
+
+exception Error of string
+
+let rec inner_list_find lst element num =
+	match lst with
+	| [] -> -1
+	| hd::tail ->
+		if (fst hd) = element then num
+		else inner_list_find tail element (num + 1)
+
+(* list_find finds index of element if element is member of lst
+	or else element is not member of lst then it returns -1*)
+let rec list_find lst element =
+	inner_list_find lst element 0
+
+(* this function make initial equation and substitution *)
+let rec initialize : map -> equation list -> (treasure * term) list -> string -> (equation list * term * (treasure * term) list) =
+	fun map equations basic_variable default_name ->
+		match map with
+		| End treasure ->
+			let index = list_find basic_variable treasure in
+			if index = (-1) then
+				(equations, (Variable default_name), (treasure, (Variable default_name))::basic_variable)
+			else
+				let (trea, treasure_var) = List.nth basic_variable index in
+				(equations, treasure_var, basic_variable)
+		| Branch (map1, map2) ->
+			let (lequations, lvar, lbasic) = initialize map1 equations basic_variable (String.concat "" [default_name; "0"]) in
+			let (requations, rvar, rbasic) = initialize map2 lequations lbasic (String.concat "" [default_name; "1"]) in
+			let current_term = Variable default_name in
+			let new_equation = Equ (lvar, (Term (rvar, current_term))) in
+			let new_equations = new_equation::requations in
+			(new_equations, current_term, rbasic)
+		| Guide (str, map2) ->
+			let treasure_form = (NameBox str) in
+			let index = list_find basic_variable treasure_form in
+			let current_term = Variable default_name in
+			if index = (-1) then
+				let treasure_var = Variable (String.concat "" [default_name; "0"]) in
+				let new_basic = (treasure_form, treasure_var)::basic_variable in
+				let (requations, rvar, rbasic) = initialize map2 equations new_basic (String.concat "" [default_name; "1"]) in 
+				let new_equation = Equ (current_term, (Term (treasure_var, rvar))) in
+				let new_equations = new_equation::requations in
+				(new_equations, current_term, rbasic)
+			else
+				let (trea, treasure_var) = List.nth basic_variable index in
+				let (requations, rvar, rbasic) = initialize map2 equations basic_variable (String.concat "" [default_name; "1"]) in
+				let new_equation = Equ (current_term, (Term (treasure_var, rvar))) in
+				let new_equations = new_equation::requations in
+				(new_equations, current_term, rbasic)
+
+(* Substitution Set : (variable * term) list = (term * term) list *)
+(* Equation Set : equation list *)
+
+(* temporary substitution: variable -> term = term -> term *)
+let rec make_substitution : equation -> (term -> term) =
+	fun equation ->
+		match equation with
+		| Equ (Variable str, term) -> 
+			(fun x -> if x = (Variable str) then term else x)
+		| _ -> raise (Error("make_substitution: Can't be substitution"))
+
+(* update : (term -> term) -> term -> term 
+	1. update of Equation set should be done by left, right each 
+	2. update of Substitution set should be done on snd of pair. Because fst of Substitution should be variable 
+	3. if term has type Term then update should be done recursively *)
+let rec update : (term -> term) -> term -> term =
+	fun sub term ->
+		match term with
+		| Term (term1, term2) -> Term (update sub term1, update sub term2)
+		| _ -> sub term
+
+let rec update_equation : (term -> term) -> equation list -> equation list =
+	fun sub equations ->
+		match equations with
+		| [] -> []
+		| hd :: tail ->
+			(match hd with
+			| Equ (term1, term2) ->
+				let new_equation = Equ (update sub term1, update sub term2) in
+				new_equation::(update_equation sub tail))
+
+let rec update_substitution : (term -> term) -> (term * term) list -> (term * term) list =
+	fun sub substitutions ->
+		match substitutions with
+		| [] -> []
+		| hd :: tail ->
+			(match hd with
+			| (Variable str, term) ->
+				let new_substitution = (Variable str, update sub term) in
+				new_substitution::(update_substitution sub tail)
+			| _ -> raise (Error("Substitution has Error")))
+
+
+let rec getReady : map -> key list =
+	fun map ->
+		[]

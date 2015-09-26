@@ -1,0 +1,9 @@
+let proc testfunc(x) =
+	let y:= 2 in
+	x := x + y in
+
+let proc testfunc2(x) =
+	let z := testfunc(5) in
+	z := z + x in
+
+write testfunc2(5)

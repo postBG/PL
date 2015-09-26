@@ -1,0 +1,7 @@
+let a := 1 in
+let b := {} in
+let c := {a:=1, b:=2} in
+let d := {a:=1, b:=2} in
+let e := {a:=1} in
+
+if a = unit then (write 1) else (write 0)

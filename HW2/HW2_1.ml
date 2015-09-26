@@ -1,13 +1,14 @@
-type metro = STATION of name
-			|AREA of name * metro
-			|CONNECT of metro * metro
-and name = string 
+exception TODO
 
-let rec inner_check: (name list*metro) -> bool =
-	fun (l, met) ->
-		match met with 
-			| STATION name ->  (List.mem name l)
-			| CONNECT (m1, m2) -> (inner_check (l, m1)) && (inner_check (l, m2))
-			| AREA (name, m) -> inner_check (name::l, m)
+type crazy2 =
+  | NIL
+  | ZERO of crazy2
+  | ONE of crazy2
+  | MONE of crazy2
 
-let checkMetro m = inner_check ([], m)	
+let rec crazy2val (c:crazy2): int =
+	match c with
+	| NIL -> 0
+	| (ZERO a) -> 2*(crazy2val a)
+	| (ONE a) -> (2*(crazy2val a)+1)
+	| (MONE a) -> (2*(crazy2val a)-1)

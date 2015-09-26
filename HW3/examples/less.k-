@@ -1,0 +1,16 @@
+(* less *)
+let x:=3 in 
+let y:=4 in
+let num:=0 in
+read x;
+read y;
+read num;
+if not ((x/y) < 5) 
+then (
+	x:={};
+	y:={a:=1,b:=2,c:=num}; 
+	y.a := 3;
+	y.a := y.c;
+	write y.a
+)
+else (write x)

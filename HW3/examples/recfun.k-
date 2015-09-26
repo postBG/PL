@@ -1,0 +1,3 @@
+let proc f(x) = if (x < 1) then 0 else (x + f(x-1)) in
+let x := 0 in
+(read x; write f(x))
