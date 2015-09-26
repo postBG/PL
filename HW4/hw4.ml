@@ -171,7 +171,58 @@ let rec ready : equation list -> (term * term) list -> (term * term) list =
 					let new_substitutions = (variable, term)::(update_substitution sub substitutions) in
 					(ready new_equations new_substitutions))
 
+let rec composed_variables : (term * term) list -> term list =
+	fun substitutions -> fst (List.split substitutions)
+
+let rec non_composed_variables : term list -> term list -> term list =
+	fun all_vars composed_vars ->
+		match all_vars with
+		| [] -> []
+		| hd :: tail ->
+			if List.mem hd composed_vars then 
+				(non_composed_variables tail composed_vars)
+			else 
+				hd::(non_composed_variables tail composed_vars)
+
+let rec term2key : term -> key =
+	fun term ->
+		match term with
+		| Variable str -> Bar
+		| Term (term1, term2) -> Node (term2key term1, term2key term2)
+
+let rec sub2key : term * term -> term * key =
+	fun (variable, term) -> (variable, (term2key term))
+
+let rec substitution2keylist : (term * term) list -> (term * key) list =
+	fun substitutions -> List.map sub2key substitutions
+
+let rec non_composed2keylist : term list -> (term * key) list =
+	fun non_composed_variables -> 
+		let keylist = List.map term2key non_composed_variables in
+		(List.combine non_composed_variables keylist)
+
+let rec final_checking : (term * key) list -> (treasure * term) list -> key list =
+	fun answers tt_lst ->
+		match tt_lst with
+		| [] -> []
+		| hd :: tail ->
+			let (treasure, variable) = hd in
+			let index = list_find answers variable in
+			if index = -1 then raise (Error "Something Wrong")
+			else
+				let (t, key) = List.nth answers index in
+				(match treasure with
+				| StarBox -> 
+					if key = Bar then key::(final_checking answers tail)
+					else raise IMPOSSIBLE
+				| _ -> key::(final_checking answers tail))
 
 let rec getReady : map -> key list =
 	fun map ->
-		[]
+		let (eq_lst, last_term, tt_lst) = initialize map [] [] "a" in
+		let all_vars = remove_duplicates (collect_all_variables eq_lst) in
+		let subs = ready eq_lst [] in
+		let composed_vars = composed_variables subs in
+		let uncomposed_vars = non_composed_variables all_vars composed_vars in
+		let eq_answers = (non_composed2keylist uncomposed_vars)@(substitution2keylist subs) in
+		(remove_duplicates (final_checking eq_answers tt_lst))
