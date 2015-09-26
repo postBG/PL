@@ -14,6 +14,7 @@ type term = Constant of treasure
 type equation = Equ of term * term
 
 exception Error of string
+exception Impossible
 
 let rec inner_list_find lst element num =
 	match lst with
@@ -105,6 +106,72 @@ let rec update_substitution : (term -> term) -> (term * term) list -> (term * te
 				new_substitution::(update_substitution sub tail)
 			| _ -> raise (Error("Substitution has Error")))
 
+let remove_elt e l =
+  let rec go l acc = match l with
+    | [] -> List.rev acc
+    | x::xs when e = x -> go xs acc
+    | x::xs -> go xs (x::acc)
+  in go l []
+
+let remove_duplicates l =
+  let rec go l acc = match l with
+    | [] -> List.rev acc
+    | x :: xs -> go (remove_elt x xs) (x::acc)
+  in go l []
+
+let rec find_variables : term -> term list =
+	fun term ->
+		match term with
+		| Term (term1, term2) -> 
+			(find_variables term1)@(find_variables term2)
+		| Variable str -> [term]
+		| Constant treasure -> []
+
+let rec collect_all_variables : equation list -> term list =
+	fun equations ->
+		match equations with
+		| [] -> []
+		| hd :: tail ->
+			(match hd with
+			| Equ (term1, term2) ->
+				(find_variables term1)@(find_variables term2)@(collect_all_variables tail))
+
+let rec ready : equation list -> (term * term) list -> (term * term) list =
+	fun equations substitutions ->
+		match equations with
+		| [] -> substitutions
+		| hd :: tail ->
+			(match hd with
+			| Equ (Term (term11, term12), Term (term21, term22)) ->
+				if (Term (term11, term12)) = (Term (term21, term22)) then
+					(ready tail substitutions)
+				else (*decomposition*)
+					let new_eq1 = Equ (term11, term21) in
+					let new_eq2 = Equ (term12, term22) in
+					(ready (new_eq1::new_eq2::tail) substitutions)
+			| Equ (Term (term1, term2), Variable str) -> (* exchange *)
+				let term = Term (term1, term2) in
+				let variable = Variable str in
+				let new_eq = Equ (variable, term) in
+				(ready (new_eq::tail) substitutions)
+			| Equ (Variable str1, Variable str2) ->
+				let variable1 = (Variable str1) in
+				let variable2 = (Variable str2) in
+				if variable1 = variable2 then (ready tail substitutions) (* remove *)
+				else (* substitution *)
+					let sub = make_substitution hd in
+					let new_equations = update_equation sub tail in
+					let new_substitutions = (variable1, variable2)::(update_substitution sub substitutions) in
+					(ready new_equations new_substitutions)
+			| Equ (Variable str, Term (term1, term2)) ->
+				let term = Term (term1, term2) in
+				let variable = Variable str in
+				if List.mem variable (find_variables term) then raise Impossible
+				else 
+					let sub = make_substitution hd in
+					let new_equations = update_equation sub tail in
+					let new_substitutions = (variable, term)::(update_substitution sub substitutions) in
+					(ready new_equations new_substitutions))
 
 let rec getReady : map -> key list =
 	fun map ->
