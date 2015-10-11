@@ -34,7 +34,10 @@ let rec initialize : map -> equation list -> (treasure * term) list -> string ->
 		| End treasure ->
 			let index = list_find basic_variable treasure in
 			if index = (-1) then
-				(equations, (Variable default_name), (treasure, (Variable default_name))::basic_variable)
+				let treasure_var = (Variable default_name) in
+				let new_equation = Equ (treasure_var, treasure_var) in
+				let new_equations = new_equation::equations in
+				(new_equations, treasure_var, (treasure, (Variable default_name))::basic_variable)
 			else
 				let (trea, treasure_var) = List.nth basic_variable index in
 				(equations, treasure_var, basic_variable)
