@@ -1,0 +1,15 @@
+6.0
+LETF( "f", "x", IF( EQUAL( VAR( "x"), NUM( 8000)), VAR( "x"), ADD( VAR( "x"), CALLV( "f", ADD( VAR( "x"), NUM( 1))))), SEQ( WRITE( CALLV( "f", NUM( 0))), WRITE( CALLV( "f", NUM( 0)))))
+TA_Result([32004000;32004000])
+6.0
+LETF( "f", "x", IF( EQUAL( VAR( "x"), NUM( 4200)), VAR( "x"), SEQ( LETV( "y", NUM( 0), VAR( "y")), ADD( VAR( "x"), CALLV( "f", ADD( VAR( "x"), NUM( 1)))))), WRITE( CALLV( "f", NUM( 0))))
+TA_Result([8822100])
+6.0
+LETF( "f", "x", IF( EQUAL( VAR( "x"), NUM( 1)), VAR( "x"), ADD( VAR( "x"), CALLV( "f", SUB( VAR( "x"), NUM( 1))))), LETV( "r1", CALLV( "f", NUM( 8000)), LETV( "r2", CALLV( "f", NUM( 8000)), WRITE( NUM( 1))))) 
+TA_Result([1])
+6.0
+LETF( "f", "x", IF( EQUAL( VAR( "x"), NUM( 1)), VAR( "x"), LETV( "y", CALLV( "f", SUB( VAR( "x"), NUM( 1))), ADD( VAR( "x"), VAR( "y")))), SEQ( SEQ( CALLV( "f", NUM( 4000)), CALLV( "f", NUM( 4000))), WRITE( NUM( 1)))) 
+TA_Result([1]);
+6.0
+LETF( "f", "x", SEQ( LETV( "y", NUM( 0), VAR( "y")), IF( EQUAL( VAR( "x"), NUM( 8000)), VAR( "x"), ADD( VAR( "x"), CALLV( "f", ADD( VAR( "x"), NUM( 1)))))), SEQ( SEQ( CALLV( "f", NUM( 0)), CALLV( "f", NUM( 0))), WRITE( NUM( 1))))
+TA_Result([1])

@@ -1,0 +1,45 @@
+1.0
+\x.x
+TA_Result(\x.x)
+1.0
+(\x.x) x
+TA_Result(x)
+1.0
+x (\y.y)
+TA_Result (x (\y.y))
+1.0
+(\x.(\y.y) z) k
+TA_Result (z)
+1.0
+(\x.(\y.(((\x.x) (\x.(y x))) (\x.x))))
+TA_Result (\x.(\y.(y (\x.x))))
+2.0
+((\x.(x x)) (\x.(x x)))
+TA_Inf
+2.0
+((\x.y) ((\x.(x x)) (\x.(x x))))
+TA_Result(y)
+2.0
+(\y.(\x.(y (((\s.(\z.z)) y) x))))
+TA_Result(\y.(\x.(y x)))
+2.0
+((\x.((\x.(\y.((y x) x))) x)) z)
+TA_Result(\y.((y z) z))
+2.0
+((((\x.(\x.(\x.((y (\x.((z x) x))) z)))) x) y) z)
+TA_Result(((y (\x.((z x) x))) z))
+2.0
+(\y.(\z.((\x.(x y))(\x.x z)))x)(\x.x x)
+TA_Result(x x)
+2.0
+((\y.(\z.((\x.(x y)) (\x.x z))) x) (\x.(\y.y x))) (\x. x)
+TA_Result(x)
+2.0
+((\y.((\x.x x)((\x.x x)((\x.x x)y))))(\x.x)) z
+TA_Result(z)
+2.0
+((\y.((\x.y x)((\x.y x)((\x.y x)y))))(\x.x)) z
+TA_Result(z)
+2.0
+(((\x.\y.\z.((z((x y) z))(x y)))(\x.\y.y))(\x.\x.x))(\z.x z)
+TA_Result((x (\z.(x z))) (\y.y))
