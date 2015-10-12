@@ -1,0 +1,8 @@
+let x := 1 in
+let y := 2 in
+let z := 4 in
+
+x := x - 1;
+if(x = 3) then (write x + y) else ((write 56); write x + y + z);
+if(x < 3) then (write x + y) else ((write 56); write x + y + z);
+if(not (x < 3)) then (write x + y) else ((write 56); write x + y + z)

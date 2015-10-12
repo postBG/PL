@@ -1,0 +1,8 @@
+let x := 1 in
+let y := 2 in
+let z := 4 in
+
+z := z - 1;
+x := x + 3;
+y := y + 2;
+write (x + y * z)/x

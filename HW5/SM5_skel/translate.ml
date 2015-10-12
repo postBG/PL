@@ -64,6 +64,8 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let e2_cmds = inner_trans e2 store_cmds in
 			(* when end of use, remove this bind *)
 			Sm5.POP::Sm5.UNBIND::e2_cmds
+		| K.READ id ->
+			Sm5.LOAD::(Sm5.PUSH (Sm5.Id id))::Sm5.STORE::(Sm5.PUSH (Sm5.Id id))::Sm5.GET::cmds
 		| K.WRITE e ->
 			let e_cmds = inner_trans e cmds in
 			let store_tmp_cmds = Sm5.STORE::(Sm5.PUSH (Sm5.Id "#tmp"))::(Sm5.BIND "#tmp")::Sm5.MALLOC::e_cmds in
