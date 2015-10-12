@@ -17,7 +17,7 @@ module type ZEXPR = sig
   val emptyEnv : environment 
   val eval : environment * expr -> value 
 
-  val int_of_value : value -> int 
+  val print_value : value -> unit 
 end 
 
 module Zexpr : ZEXPR =
@@ -68,7 +68,7 @@ struct
 			if(behind_max > evaluated) then behind_max
 			else evaluated
 			
-	let int_of_value : value -> int = 
-		fun value -> value
+	let print_value : value -> unit = 
+		fun value -> print_int value
 end
 

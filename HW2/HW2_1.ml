@@ -12,3 +12,5 @@ let rec crazy2val (c:crazy2): int =
 	| (ZERO a) -> 2*(crazy2val a)
 	| (ONE a) -> (2*(crazy2val a)+1)
 	| (MONE a) -> (2*(crazy2val a)-1)
+
+

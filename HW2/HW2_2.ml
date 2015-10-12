@@ -6,12 +6,12 @@ type crazy2 =
   | ONE of crazy2
   | MONE of crazy2
 
-let rec crazy2val (c: crazy2): int =
+let rec in_crazy2val (c: crazy2): int =
 	match c with
 	| NIL -> 0
-	| (ZERO a) -> 2*(crazy2val a)
-	| (ONE a) -> (2*(crazy2val a)+1)
-	| (MONE a) -> (2*(crazy2val a)-1)
+	| (ZERO a) -> 2*(in_crazy2val a)
+	| (ONE a) -> (2*(in_crazy2val a)+1)
+	| (MONE a) -> (2*(in_crazy2val a)-1)
 
 let sum_carry (a: int) (b: int) (c: int): int*int=
 	let sum=a+b+c in
@@ -40,9 +40,9 @@ let divider (c: crazy2): crazy2*crazy2=
 	| (MONE a) -> ((MONE NIL), a)
 
 let sum_carry_as_crazy2 (lhs: crazy2) (rhs: crazy2) (c: crazy2): crazy2*crazy2=
-	let lhs_num=crazy2val lhs in
-	let rhs_num=crazy2val rhs in
-	let c_num=crazy2val c in
+	let lhs_num=in_crazy2val lhs in
+	let rhs_num=in_crazy2val rhs in
+	let c_num=in_crazy2val c in
 	let sumXcarry=(sum_carry lhs_num rhs_num c_num) in
 	let sum=(fst sumXcarry) in
 	let carry=(snd sumXcarry) in
@@ -61,5 +61,7 @@ let rec crazy2add_carry (lhs: crazy2) (rhs: crazy2) (carry: crazy2): crazy2=
 	else (append_crazy2 sum (crazy2add_carry lhs_second rhs_second cry))
 
 
-let rec crazy2add (a: crazy2) (b: crazy2): crazy2 =
+let rec crazy2add ((a: crazy2), (b: crazy2)): crazy2 =
 	crazy2add_carry a b (ZERO NIL)
+
+
