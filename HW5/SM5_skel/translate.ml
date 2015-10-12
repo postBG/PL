@@ -56,7 +56,7 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			(Sm5.JTR (comp_then_cmds, comp_else_cmds))::cond_cmds
 		| K.SEQ (e1, e2) ->
 			let e1_cmds = inner_trans e1 cmds in
-			inner_trans e2 e1_cmds
+			inner_trans e2 e1_cmds(* Here *)
 		| K.LETV (id, e1, e2) ->
 			let e1_cmds = inner_trans e1 cmds in
 			let bind_cmds = (Sm5.BIND id)::Sm5.MALLOC::e1_cmds in
@@ -64,6 +64,11 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let e2_cmds = inner_trans e2 store_cmds in
 			(* when end of use, remove this bind *)
 			Sm5.POP::Sm5.UNBIND::e2_cmds
+		| K.WRITE e ->
+			let e_cmds = inner_trans e cmds in
+			let store_tmp_cmds = Sm5.STORE::(Sm5.PUSH (Sm5.Id "#tmp"))::(Sm5.BIND "#tmp")::Sm5.MALLOC::e_cmds in
+			let stack_value_twice_cmds = Sm5.LOAD::(Sm5.PUSH (Sm5.Id "#tmp"))::Sm5.LOAD::(Sm5.PUSH (Sm5.Id "#tmp"))::store_tmp_cmds in
+			Sm5.POP::Sm5.UNBIND::Sm5.PUT::stack_value_twice_cmds
 		| _ -> cmds
 
 
