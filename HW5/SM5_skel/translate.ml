@@ -64,6 +64,18 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let e2_cmds = inner_trans e2 store_cmds in
 			(* when end of use, remove this bind *)
 			Sm5.POP::Sm5.UNBIND::e2_cmds
+		| K.LETF (id, arg, e1, e2) -> (* Here *)
+			let e1_cmds = inner_trans e1 [] in
+			let body = List.rev e1_cmds in
+			let bind_function_cmds = (Sm5.BIND id)::(Sm5.PUSH (Sm5.Fn (arg, body)))::cmds in
+			let fun_scope_cmds = inner_trans e2 bind_function_cmds in
+			Sm5.POP::Sm5.UNBIND::fun_scope_cmds
+		| K.CALLV (id, e) ->(* Here *)
+			let e_cmds = inner_trans e cmds in
+			let tmp_arg = "#arg"^id in
+			let store_arg_cmds = Sm5.STORE::(Sm5.PUSH (Sm5.Id tmp_arg))::(Sm5.BIND tmp_arg)::Sm5.MALLOC::e_cmds in
+			let fun_call_cmds = Sm5.CALL::(Sm5.PUSH (Sm5.Id tmp_arg))::Sm5.LOAD::(Sm5.PUSH (Sm5.Id tmp_arg))::(Sm5.PUSH (Sm5.Id id))::store_arg_cmds in
+			Sm5.POP::Sm5.UNBIND::fun_call_cmds
 		| K.READ id ->
 			Sm5.LOAD::(Sm5.PUSH (Sm5.Id id))::Sm5.STORE::(Sm5.PUSH (Sm5.Id id))::Sm5.GET::cmds
 		| K.WRITE e ->
@@ -71,7 +83,7 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let store_tmp_cmds = Sm5.STORE::(Sm5.PUSH (Sm5.Id "#tmp"))::(Sm5.BIND "#tmp")::Sm5.MALLOC::e_cmds in
 			let stack_value_twice_cmds = Sm5.LOAD::(Sm5.PUSH (Sm5.Id "#tmp"))::Sm5.LOAD::(Sm5.PUSH (Sm5.Id "#tmp"))::store_tmp_cmds in
 			Sm5.POP::Sm5.UNBIND::Sm5.PUT::stack_value_twice_cmds
-		| _ -> cmds
+		| _ -> Sm5.empty_command
 
 
 let rec trans : K.program -> Sm5.command = 
