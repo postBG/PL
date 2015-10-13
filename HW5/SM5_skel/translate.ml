@@ -81,6 +81,9 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let help_bind_cmds = (Sm5.PUSH (Sm5.Id id))::store_arg_cmds in
 			let fun_call_cmds = Sm5.CALL::(Sm5.PUSH (Sm5.Id tmp_arg))::Sm5.LOAD::(Sm5.PUSH (Sm5.Id tmp_arg))::(Sm5.PUSH (Sm5.Id id))::help_bind_cmds in
 			Sm5.POP::Sm5.UNBIND::fun_call_cmds
+		| K.CALLR (id, arg_name) ->
+			let help_bind_cmds = (Sm5.PUSH (Sm5.Id id))::cmds in
+			Sm5.CALL::(Sm5.PUSH (Sm5.Id arg_name))::Sm5.LOAD::(Sm5.PUSH (Sm5.Id arg_name))::(Sm5.PUSH (Sm5.Id id))::help_bind_cmds
 		| K.READ id ->
 			Sm5.LOAD::(Sm5.PUSH (Sm5.Id id))::Sm5.STORE::(Sm5.PUSH (Sm5.Id id))::Sm5.GET::cmds
 		| K.WRITE e ->
