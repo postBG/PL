@@ -1,0 +1,2 @@
+let proc rec_fun_while(cond_var) = if(cond_var) then (cond_var; rec_fun_while(not cond_var)) else cond_var in
+rec_fun_while(true)

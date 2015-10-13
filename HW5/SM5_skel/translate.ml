@@ -8,6 +8,17 @@ open Sm5
 module Translator = struct
 
 
+let rec while_to_rec_fun : K.program -> K.program -> K.program =
+	fun cond body ->
+		K.LETF("rec_fun_while","cond_var",
+		  K.IF(K.VAR("cond_var"),
+		    K.SEQ(body, K.CALLV("rec_fun_while", cond)),(* then statement *)
+		    K.UNIT (* else statement *)
+		  ),
+		  K.CALLV("rec_fun_while",cond) (* first call *)
+		)
+
+
 (* 1. calculated value will top of the stack *)
 (* this function get pgm and previous cmds and make new cmds *)
 let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
@@ -54,6 +65,10 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let comp_then_cmds = List.rev (inner_trans e1 []) in
 			let comp_else_cmds = List.rev (inner_trans e2 []) in
 			(Sm5.JTR (comp_then_cmds, comp_else_cmds))::cond_cmds
+		| K.WHILE (e1, e2) ->
+			let k_minus_while = while_to_rec_fun e1 e2 in
+			let while_cmds = inner_trans k_minus_while cmds in
+			while_cmds
 		| K.SEQ (e1, e2) ->
 			let e1_cmds = inner_trans e1 cmds in
 			inner_trans e2 e1_cmds(* Here *)

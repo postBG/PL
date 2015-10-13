@@ -1,0 +1,8 @@
+let x := 0; y := 1; z := 2 in
+
+read z;
+write (while(x < z) do (write (y; x := x + 2)))
+
+(* print x, z times, then type error because it trying to write unit 
+ * this is testing stack condition. if you don't get it, Read k--.pdf *)
+
