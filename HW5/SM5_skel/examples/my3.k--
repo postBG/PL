@@ -9,3 +9,5 @@ x := x + 3;
 y := y + 2;
 write (x + y * z)/x + w
 
+(* plus 4 *)
+

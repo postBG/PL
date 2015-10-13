@@ -4,3 +4,5 @@ let z := 4 in
 
 read x;
 if(x < 0) then (write y) else ((write 56 + y); write z)
+
+(* 2 or 58 4  *)
