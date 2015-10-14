@@ -1,0 +1,14 @@
+LETV("i",NUM(3),LETV("i_",NUM(3),
+    WHILE(LESS(VAR("i"),NUM(4)),
+      SEQ(SEQ(NUM(4),
+          ASSIGN("i_",ADD(VAR("i_"),NUM(1)))),
+        ASSIGN("i",VAR("i_")))
+    )
+  )
+)
+
+K.LETV(id, init_stat,
+  			K.WHILE( K.LESS( K.VAR(id), K.ADD(bound_stat, K.NUM(1))),
+    			K.SEQ(body, K.ASSIGN(id, K.ADD(K.VAR(id), K.NUM(1))))
+  			)
+		)

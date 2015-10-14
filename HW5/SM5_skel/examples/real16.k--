@@ -1,0 +1,5 @@
+let y := 2 in
+let z := 0 in
+let proc f (x) = x + y + z in
+read z;
+write (f (1))

@@ -18,6 +18,19 @@ let rec while_to_rec_fun : K.program -> K.program -> K.program =
 		  K.CALLV("rec_fun_while",cond) (* first call *)
 		)
 
+let rec for_to_while : K.id -> K.program -> K.program -> K.program -> K.program =
+	fun id init_stat bound_stat body ->
+		let inner_id = "#inner"^id in
+		K.LETV(id, init_stat,
+			K.LETV(inner_id, init_stat,
+    			K.WHILE(K.LESS(K.VAR(id), K.ADD(bound_stat, K.NUM(1))),
+      				K.SEQ(K.SEQ(body,
+          					K.ASSIGN(inner_id, K.ADD(K.VAR(inner_id), K.NUM(1)))),
+        				K.ASSIGN(id, K.VAR(inner_id)))
+   	 			)
+  			)
+		)
+
 
 (* 1. calculated value will top of the stack *)
 (* this function get pgm and previous cmds and make new cmds *)
@@ -69,9 +82,14 @@ let rec inner_trans : K.program -> Sm5.command -> Sm5.command =
 			let k_minus_while = while_to_rec_fun e1 e2 in
 			let while_cmds = inner_trans k_minus_while cmds in
 			while_cmds
+		| K.FOR (id, e1, e2, e3) ->
+			let k_minus_while = for_to_while id e1 e2 e3 in
+			let for_cmds = inner_trans k_minus_while cmds in
+			for_cmds
 		| K.SEQ (e1, e2) ->
 			let e1_cmds = inner_trans e1 cmds in
-			inner_trans e2 e1_cmds(* Here *)
+			(* remove e1_cmds final value, according to semantics *)
+			inner_trans e2 (Sm5.POP::e1_cmds)
 		| K.LETV (id, e1, e2) ->
 			let e1_cmds = inner_trans e1 cmds in
 			let bind_cmds = (Sm5.BIND id)::Sm5.MALLOC::e1_cmds in

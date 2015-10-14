@@ -1,0 +1,2 @@
+let i := 3; i_ := 3 in
+while(i < 4) do (4; i_ := i_ + 1; i := i_)
