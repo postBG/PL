@@ -49,9 +49,7 @@ struct
   exception Unbound_id of string
   exception Unbound_loc of int * int
   exception End
-  (* my exception *)
-  exception Error of string
-
+  
   let empty_command = []
 
   let (@?) l x = snd (List.find (fun y -> x = fst y) l)
@@ -150,81 +148,146 @@ struct
   let decrease_allocated_size : int -> unit =
     fun dec_size -> allocated_size := !allocated_size - dec_size
 
-  
+  (* memory = (loc * value) list *)
+  let rec find_value_at_loc : memory -> loc -> value =
+    fun memory loc -> 
+        snd (List.find (fun locXvalue -> (fst locXvalue = loc)) memory)
+
+  (* find all reachable locations using enviroment *)
+  (* enviroment : map list 
+   * map = string * svalue 
+   * svalue = V of value | P of proc | M of map
+   * value = Z of int | B of bool | L of loc | Unit | R of record *)
+  (* record = map list *)
+  let rec find_reachable_locs : memory -> environment -> loc list =
+    fun memory env ->
+      match env with
+      | [] -> []
+      | hd::tail ->
+          let sval = snd hd in
+          (match sval with
+          | V (L loc) -> (* this variable is pointer or reference *)
+              (loc_find_reachable_locs memory loc)@(find_reachable_locs memory tail)
+          | V (R record) -> (* this varible is start of record *)
+              (record_find_reachable_locs memory record)@(find_reachable_locs memory tail)
+          | P (_, _, proc_env) -> 
+              (find_reachable_locs memory proc_env)@(find_reachable_locs memory tail)
+          | M map -> 
+              (map_find_reachable_locs memory map)@(find_reachable_locs memory tail)
+          | _ -> (find_reachable_locs memory tail)
+          )
+  and loc_find_reachable_locs : memory -> loc -> loc list =
+    fun memory loc ->
+      try
+        let value = find_value_at_loc memory loc in
+        match value with
+        | L new_loc -> loc::(loc_find_reachable_locs memory new_loc)
+        | R record -> loc::(record_find_reachable_locs memory record)
+        | _ -> loc::[] (* end of search *)
+      with Not_found -> loc::[] (* end of search *)
+  and record_find_reachable_locs : memory -> record -> loc list =
+    fun memory record -> 
+      match record with
+      | [] -> []
+      | hd::tail -> (* hd = map = string * svalue *)
+          let sval = snd hd in
+          (match sval with
+          | V (L loc) -> loc::(record_find_reachable_locs memory tail)
+          | V (R new_record) -> 
+              (record_find_reachable_locs memory new_record)@(record_find_reachable_locs memory tail)
+          | P (_, _, proc_env) -> 
+              (find_reachable_locs memory proc_env)@(record_find_reachable_locs memory tail)    
+          | M map -> 
+              (map_find_reachable_locs memory map)@(record_find_reachable_locs memory tail)
+          | _ -> (record_find_reachable_locs memory tail)
+          )
+  and map_find_reachable_locs : memory -> map -> loc list =
+    fun memory map ->
+      let sval = snd map in
+      match sval with
+      | V (L loc) -> (loc_find_reachable_locs memory loc)
+      | V (R record) -> (record_find_reachable_locs memory record)
+      | P (_, _, proc_env) -> (find_reachable_locs memory proc_env)
+      | M new_map -> (map_find_reachable_locs memory new_map)
+      | _ -> []
+
   (***********************************************************************)
   (***********************************************************************)
   (***********************************************************************)
   let rec eval (s,m,e,c,k) = 
-	eval(
-     match (s,m,e,c,k) with
-       (_,_,_,PUSH(Val v)::c,_) -> (V v::s, m, e, c, k)
-     | (_,_,_,PUSH(Id x)::c, _) ->
-	 	(try
-        	((e @? x)::s, m, e, c, k) 
+    eval(
+      match (s,m,e,c,k) with
+      | (_,_,_,PUSH(Val v)::c,_) -> (V v::s, m, e, c, k)
+      | (_,_,_,PUSH(Id x)::c, _) ->
+        (try ((e @? x)::s, m, e, c, k) 
         with Not_found -> raise (Unbound_id x))
-     | (_,_,_,PUSH(Fn(x,c'))::c,_) -> (P(x,c',e)::s, m, e, c, k)
-     | (w::s,_,_,POP::c,k) -> (s, m, e, c, k)
-     | (V(L l)::V v::s,_,_,STORE::c,_) -> (s, (l,v)::m, e, c, k)
-     | (V(L l)::s,_,_,LOAD::c,_) -> 
-	 	(try
-        	(V(m @? l)::s, m, e, c, k)
-        with Not_found -> 
-			let (l1, l2) = l in raise (Unbound_loc (l1, l2)))
-     | (V(B b)::s,_,_,JTR(c1,c2)::c,_) -> 
-         (s, m, e, (if b then c1@c else (c2@c)), k)
-     | (_,_,_,MALLOC::c,_) -> (V(L(newl()))::s, m, e, c, k)
-     | (_,_,_,BOX z::c,_) ->
+      | (_,_,_,PUSH(Fn(x,c'))::c,_) -> (P(x,c',e)::s, m, e, c, k)
+      | (w::s,_,_,POP::c,k) -> (s, m, e, c, k)
+      | (V(L l)::V v::s,_,_,STORE::c,_) -> (s, (l,v)::m, e, c, k)
+      | (V(L l)::s,_,_,LOAD::c,_) -> 
+        (try (V(m @? l)::s, m, e, c, k)
+        with Not_found -> let (l1, l2) = l in raise (Unbound_loc (l1, l2)))
+      | (V(B b)::s,_,_,JTR(c1,c2)::c,_) -> (s, m, e, (if b then c1@c else (c2@c)), k)
+      | (_,_,_,MALLOC::c,_) -> (V(L(newl()))::s, m, e, c, k)
+      | (_,_,_,BOX z::c,_) ->
         let rec box b i s =
-			if i = 0 then V (R b)::s
-			else 
-				match s with 
-				  (M m::s) -> box (m::b) (i-1) s
-              	| _ -> raise (RunError (s,m,e,c,k))
-        in  (box [] z s,m,e,c,k)
-     | (V (R b)::s,_,_,UNBOX x::c,_) ->
-	 	(try
-        	((b @? x)::s,m,e,c,k)
-		with Not_found -> raise (Unbound_id x))
-     | (w::s,_,_,BIND x::c,_) -> (s, m, (x,w)::e, c, k)
-     | (_,_,i::e,UNBIND::c,_) -> (M i::s, m, e, c, k)
-     | (V(L l)::V v::P(x,c',e')::s,_,_,CALL::c,k) ->
-         (s, (l,v)::m, (x,V(L l))::e', c', (c,e)::k)
-     | (_,_,_,[],(c,e')::k) -> (s, m, e', c, k)
-     | (_,_,_,GET::c,_) -> (V(Z(read_int()))::s, m, e, c, k) 
-     | (V(Z z)::s,_,_,PUT::c,_) -> 
+          if i = 0 then V (R b)::s
+          else 
+				    match s with 
+				    | (M m::s) -> box (m::b) (i-1) s
+            | _ -> raise (RunError (s,m,e,c,k))
+          in  (box [] z s, m, e, c, k)
+      | (V (R b)::s,_,_,UNBOX x::c,_) ->
+          (try ((b @? x)::s,m,e,c,k)
+          with Not_found -> raise (Unbound_id x))
+      | (w::s,_,_,BIND x::c,_) -> (s, m, (x,w)::e, c, k)
+      | (_,_,i::e,UNBIND::c,_) -> (M i::s, m, e, c, k)
+      | (V(L l)::V v::P(x,c',e')::s,_,_,CALL::c,k) -> 
+          (s, (l,v)::m, (x,V(L l))::e', c', (c,e)::k)
+      | (_,_,_,[],(c,e')::k) -> (s, m, e', c, k)
+      | (_,_,_,GET::c,_) -> (V(Z(read_int()))::s, m, e, c, k) 
+      | (V(Z z)::s,_,_,PUT::c,_) -> 
           print_int z; print_newline(); (s, m, e, c, k)
-     | (V(Z z2)::V(Z z1)::s,_,_,ADD::c,_) -> (V(Z(z1+z2))::s, m, e, c, k)
-     | (V(Z z2)::V(L(l1,z1))::s,_,_,ADD::c,_) -> if z1+z2 >= 0 
-	 then (V(L(l1,z1+z2))::s, m, e, c, k) 
-	 else raise (RunError (s,m,e,c,k))
-     | (V(L(l2,z2))::V(Z z1)::s,_,_,ADD::c,_) -> if z1+z2 >= 0 
-	 then (V(L(l2,z1+z2))::s, m, e, c, k)
-	 else raise (RunError (s,m,e,c,k))
-     | (V(Z z2)::V(Z z1)::s,_,_,SUB::c,_) -> (V(Z(z1-z2))::s, m, e, c, k)
-     | (V(Z z2)::V(L(l1,z1))::s,_,_,SUB::c,_) -> if z1-z2 >= 0 
-	 then (V(L(l1,z1-z2))::s, m, e, c, k)
-	 else raise (RunError (s,m,e,c,k))
-     | (V(L(l2,z2))::V(L(l1,z1))::s,_,_,SUB::c,_) -> if l1 = l2 then (V(Z(z1-z2))::s, m, e, c, k)
-	 												else raise (RunError (s,m,e,c,k))
-     | (V(Z z2)::V(Z z1)::s,_,_,MUL::c,_) -> (V(Z(z1*z2))::s, m, e, c, k)
-     | (V(Z z2)::V(Z z1)::s,_,_,DIV::c,_) -> if z2 = 0 
-	 then raise (RunError (s,m,e,c,k))
-	 else (V(Z(z1/z2))::s, m, e, c, k) 
-     | (V(Z z2)::V(Z z1)::s,_,_,EQ::c,_) -> (V(B(z1=z2))::s, m, e, c, k)
-     | (V(B b2)::V(B b1)::s,_,_,EQ::c,_) -> (V(B(b1=b2))::s, m, e, c, k)
-     | (V(R r2)::V(R r1)::s,_,_,EQ::c,_) ->
-       (V(B(List.sort compare r1 = List.sort compare r2))::s, m, e, c, k)
-    
-     | (V Unit::V Unit::s,_,_,EQ::c,_) -> (V(B true)::s, m, e, c, k)
-     | (V(L(l2,z2))::V(L(l1,z1))::s,_,_,EQ::c,_) -> (V(B(l1 = l2 && z1 = z2))::s, m, e, c, k)
-     | (V _::V _::s,_,_,EQ::c,_) -> (V(B false)::s,m,e,c,k) 
-     | (V(Z z2)::V(Z z1)::s,_,_,LESS::c,_) -> (V(B(z1<z2))::s, m, e, c, k)
-     | (V(L(z1,z2))::V(L(l1,l2))::s,_,_,LESS::c,_) -> if z1 = l1 then (V(B(l2<z2))::s, m, e, c, k)
-	 												else raise (RunError (s,m,e,c,k))
-     | (V(B b)::s,_,_,NOT::c,_) -> (V(B(not b))::s, m, e, c, k)
-     | (_,_,_,[],[]) -> raise End
-     | _ -> raise (RunError (s,m,e,c,k))
-	)
+      | (V(Z z2)::V(Z z1)::s,_,_,ADD::c,_) -> (V(Z(z1+z2))::s, m, e, c, k)
+      | (V(Z z2)::V(L(l1,z1))::s,_,_,ADD::c,_) -> 
+          if z1+z2 >= 0 
+          then (V(L(l1,z1+z2))::s, m, e, c, k) 
+          else raise (RunError (s,m,e,c,k))
+      | (V(L(l2,z2))::V(Z z1)::s,_,_,ADD::c,_) -> 
+          if z1+z2 >= 0 
+          then (V(L(l2,z1+z2))::s, m, e, c, k)
+          else raise (RunError (s,m,e,c,k))
+      | (V(Z z2)::V(Z z1)::s,_,_,SUB::c,_) -> (V(Z(z1-z2))::s, m, e, c, k)
+      | (V(Z z2)::V(L(l1,z1))::s,_,_,SUB::c,_) -> 
+          if z1-z2 >= 0 
+          then (V(L(l1,z1-z2))::s, m, e, c, k)
+          else raise (RunError (s,m,e,c,k))
+      | (V(L(l2,z2))::V(L(l1,z1))::s,_,_,SUB::c,_) -> 
+          if l1 = l2 
+          then (V(Z(z1-z2))::s, m, e, c, k)
+          else raise (RunError (s,m,e,c,k))
+      | (V(Z z2)::V(Z z1)::s,_,_,MUL::c,_) -> (V(Z(z1*z2))::s, m, e, c, k)
+      | (V(Z z2)::V(Z z1)::s,_,_,DIV::c,_) -> 
+          if z2 = 0 
+          then raise (RunError (s,m,e,c,k))
+          else (V(Z(z1/z2))::s, m, e, c, k) 
+      | (V(Z z2)::V(Z z1)::s,_,_,EQ::c,_) -> (V(B(z1=z2))::s, m, e, c, k)
+      | (V(B b2)::V(B b1)::s,_,_,EQ::c,_) -> (V(B(b1=b2))::s, m, e, c, k)
+      | (V(R r2)::V(R r1)::s,_,_,EQ::c,_) ->
+          (V(B(List.sort compare r1 = List.sort compare r2))::s, m, e, c, k)
+      | (V Unit::V Unit::s,_,_,EQ::c,_) -> (V(B true)::s, m, e, c, k)
+      | (V(L(l2,z2))::V(L(l1,z1))::s,_,_,EQ::c,_) -> (V(B(l1 = l2 && z1 = z2))::s, m, e, c, k)
+      | (V _::V _::s,_,_,EQ::c,_) -> (V(B false)::s,m,e,c,k) 
+      | (V(Z z2)::V(Z z1)::s,_,_,LESS::c,_) -> (V(B(z1<z2))::s, m, e, c, k)
+      | (V(L(z1,z2))::V(L(l1,l2))::s,_,_,LESS::c,_) -> 
+          if z1 = l1 
+          then (V(B(l2<z2))::s, m, e, c, k)
+          else raise (RunError (s,m,e,c,k))
+      | (V(B b)::s,_,_,NOT::c,_) -> (V(B(not b))::s, m, e, c, k)
+      | (_,_,_,[],[]) -> raise End
+      | _ -> raise (RunError (s,m,e,c,k))
+    )
+
   let print_error x = printf "SM5 evaluation error: ";
     (match x with
        Unbound_id x -> printf "unbound id '%s'.@." x
