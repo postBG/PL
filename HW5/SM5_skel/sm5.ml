@@ -239,12 +239,12 @@ struct
     if is_mem_enough() then
       (increase_allocated_size(1);
       (V(L(newl()))::s, m, e, c, k))
-    else(* garbage collection *)
+    else(* garbage collection here!! *)
       (let all_reachable_mem = (find_reachable_memory m e k) in
       let all_reachable_mem_size = List.length all_reachable_mem in
       decrease_allocated_size(!allocated_size - all_reachable_mem_size);
       if is_mem_enough() then
-        (s, all_reachable_mem, e, c, k)
+        (allocate_memory (s, all_reachable_mem, e, c, k))
       else
         raise GC_Failure)
 

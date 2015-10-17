@@ -46,6 +46,9 @@ trans가 제대로 정의되었는지 K-- 실행기로 실행한 결과와 비�
 'run -k examples/test.k--'라고 입력하면 K-- 실행기를 사용하여 입력프로그램을 
 실행합니다.
 
+=============
+ocamlc -g -c GCTestCase.ml
+ocamlc -g -o test lexer.cmo pp.cmo parser.cmo sm5.cmo translate.cmo k.cmo GCTestCase.cmo
 --
 최웅식 <wschoi@ropas.kaist.ac.kr>
 신재호 <netj@ropas.snu.ac.kr>
