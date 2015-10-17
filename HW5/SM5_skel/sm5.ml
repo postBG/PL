@@ -49,6 +49,8 @@ struct
   exception Unbound_id of string
   exception Unbound_loc of int * int
   exception End
+  (* my exception *)
+  exception Error of string
 
   let empty_command = []
 
@@ -120,6 +122,38 @@ struct
       (* create new loc *)
   let newl () = loccount := !loccount + 1; (!loccount,0)
 
+  (***********************************************************************)
+  (***********************************************************************)
+  (***********************************************************************)
+  
+  (* remove duplicate elements in list *)
+  let remove_elt e l =
+    let rec go l acc = match l with
+      | [] -> List.rev acc
+      | x::xs when e = x -> go xs acc
+      | x::xs -> go xs (x::acc)
+    in go l []
+
+  let remove_duplicates l =
+    let rec go l acc = match l with
+      | [] -> List.rev acc
+      | x :: xs -> go (remove_elt x xs) (x::acc)
+    in go l []
+
+  (* mark and sweep using dfs *)
+  let max_mem_size = 128
+  let allocated_size = ref 0
+
+  (* inc_size and dec_size should be positive *)
+  let increase_allocated_size : int -> unit =
+    fun inc_size -> allocated_size := !allocated_size + inc_size
+  let decrease_allocated_size : int -> unit =
+    fun dec_size -> allocated_size := !allocated_size - dec_size
+
+  
+  (***********************************************************************)
+  (***********************************************************************)
+  (***********************************************************************)
   let rec eval (s,m,e,c,k) = 
 	eval(
      match (s,m,e,c,k) with

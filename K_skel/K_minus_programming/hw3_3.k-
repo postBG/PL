@@ -126,4 +126,6 @@ dft (tree1);										(* 1.0, 8 *)*)
 (*dft(makeRtree(3, makeRtree(1, makeRtree(2, makeTree(6, leaf(4), leaf(5)))))); *)
 (*bft( makeTree( 1, makeTree (2, leaf(4), makeLtree(5, leaf(6))), makeTree( 3, makeRtree( 7, makeRtree( 9, leaf(10))), leaf(8))));*)
 (*bft(makeRtree(3, makeRtree(1, makeRtree(2, makeTree(6, leaf(4), leaf(5))))));*)
+
+
 2015
