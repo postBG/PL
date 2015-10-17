@@ -211,6 +211,43 @@ struct
       | M new_map -> (map_find_reachable_locs memory new_map)
       | _ -> []
 
+  let rec find_all_reachable_locs : memory -> environment -> continuation -> loc list =
+    fun memory env k ->
+      match k with
+      | [] -> (find_reachable_locs memory env)
+      | hd::tail ->
+          let conti_env = snd hd in
+          (find_reachable_locs memory conti_env)@(find_all_reachable_locs memory env tail)
+
+  let rec is_mem_reachable : loc list -> (loc * value) -> bool =
+    fun all_locs (loc, value) -> List.mem loc all_locs
+
+  let rec find_all_reachable_mem : memory -> loc list -> memory =
+    fun memory all_locs ->
+      List.find_all (is_mem_reachable all_locs) memory 
+
+  let rec find_reachable_memory : memory -> environment -> continuation -> memory =
+    fun memory env k ->
+      let all_reachable_locs = find_all_reachable_locs memory env k in
+      let all_reachable_mem = find_all_reachable_mem memory all_reachable_locs in
+      all_reachable_mem
+
+  let rec is_mem_enough : unit -> bool =
+    fun u -> (!allocated_size < max_mem_size)
+
+  let rec allocate_memory(s, m, e, c, k) =
+    if is_mem_enough() then
+      (increase_allocated_size(1);
+      (V(L(newl()))::s, m, e, c, k))
+    else(* garbage collection *)
+      (let all_reachable_mem = (find_reachable_memory m e k) in
+      let all_reachable_mem_size = List.length all_reachable_mem in
+      decrease_allocated_size(!allocated_size - all_reachable_mem_size);
+      if is_mem_enough() then
+        (s, all_reachable_mem, e, c, k)
+      else
+        raise GC_Failure)
+
   (***********************************************************************)
   (***********************************************************************)
   (***********************************************************************)
@@ -228,7 +265,7 @@ struct
         (try (V(m @? l)::s, m, e, c, k)
         with Not_found -> let (l1, l2) = l in raise (Unbound_loc (l1, l2)))
       | (V(B b)::s,_,_,JTR(c1,c2)::c,_) -> (s, m, e, (if b then c1@c else (c2@c)), k)
-      | (_,_,_,MALLOC::c,_) -> (V(L(newl()))::s, m, e, c, k)
+      | (_,_,_,MALLOC::c,_) -> allocate_memory(s, m, e, c, k)
       | (_,_,_,BOX z::c,_) ->
         let rec box b i s =
           if i = 0 then V (R b)::s
