@@ -1,6 +1,6 @@
 (*[Header]*)
-open Sm5.Sm5
-
+(*open Sm5.Sm5*)
+open Sm5
 (* concat command n times *)
 let append (n: int) (f: int -> command) (cmd: command) : command = 
     let rec iter i =
@@ -38,11 +38,6 @@ let cmds1 =
 
     cmds
 
-let _ = run cmds1
-
-(*[Value]
-"128"*)
-
 (*[Test]*)
 (* 2. Trigger GC Failure (No garbage memory to collect) *)
 let cmds2 =
@@ -66,10 +61,7 @@ let cmds2 =
 
     cmds
 
-let _ = run cmds2 
 
-(*[Exception]
-GC_Failure*)
 
 (*[Test]*)
 (* 3. Trigger GC, with one garbage memory to collect *)
@@ -114,10 +106,7 @@ let cmds3 =
 
     cmds
 
-let _ = run cmds3
 
-(*[Value]
-"137"*)
 
 (*[Test]*)
 (* 4. Gc must be able to track the list structure, and decide that there's no garbage to collect *) 
@@ -156,10 +145,7 @@ let cmds4 =
     
     cmds @ [STORE]
 
-let _ = run cmds4
 
-(*[Exception]
-GC_Failure*)
 
 (*[Test]*)
 (* 5. Alternatedly *)
@@ -198,10 +184,6 @@ let cmds5 =
 
     cmds
 
-let _ = run cmds5
-
-(*[Value]
-"128"*)
 
 (*[Test]*)
 (* 6. Should not collect location inside BOX *)
@@ -254,12 +236,9 @@ let cmds6 =
 
     cmds
 
-let _ = run cmds6
 
-(*[Exception]
-GC_Failure
 
-[Test]*)
+(*[Test]*)
 let cmds7 = 
     let cmds = [
         PUSH (Fn ("x", [
@@ -304,12 +283,9 @@ let cmds7 =
     
     cmds
 
-let _ = run cmds7
 
-(*[Exception]
-GC_Failure
 
-[Test]*)
+(*[Test]*)
 let cmds8 = 
 
     let cmds = [
@@ -367,12 +343,8 @@ let cmds8 =
     let cmds = cmds @ [PUT] in
     cmds
 
-let _ = run cmds8
 
-(*[Value]
-"252"
-
-[Test]*)
+(*[Test]*)
 let cmds9 = 
     let cmds = append 127 (fun _ -> [
         MALLOC;
@@ -405,12 +377,8 @@ let cmds9 =
 
     cmds
 
-let _ = run cmds9
 
-(*[Exception]
-GC_Failure
-
-[Test]*)
+(*[Test]*)
 let cmds10 = 
     let cmds = append 127 (fun _ -> [
         MALLOC;
@@ -447,8 +415,18 @@ let cmds10 =
 
     cmds
 
-let _ = run cmds10
 
-(*[Exception]
-GC_Failure*)
+(* 4 9 10 *)
 
+
+
+let _ = run cmds1(*[Value] "128"*)
+let _ = run cmds2(*[Exception] GC_Failure*)
+let _ = run cmds3(*[Value] "137"*)
+let _ = run cmds4(*[Exception] GC_Failure*)
+let _ = run cmds5(*[Value] "128"*)
+let _ = run cmds6(*[Exception] GC_Failure*)
+let _ = run cmds7(*[Exception] GC_Failure*)
+let _ = run cmds8(*[Value] "252"*)
+let _ = run cmds9(*[Exception] GC_Failure*)
+let _ = run cmds10(*[Exception] GC_Failure*)
