@@ -211,6 +211,23 @@ struct
         | M new_map -> (map_find_reachable_locs memory new_map)
         | _ -> []
 
+    let rec find_reachable_locs_in_stack : memory -> stack -> loc list =
+      fun memory stack ->
+        match stack with
+        | [] -> []
+        | hd::tail ->
+            (match hd with
+              | V (L loc) -> 
+                  (loc_find_reachable_locs memory loc)@(find_reachable_locs_in_stack memory tail)
+              | V (R record) ->
+                  (record_find_reachable_locs memory record)@(find_reachable_locs_in_stack memory tail)
+              | P (_, _, proc_env) ->
+                  (find_reachable_locs memory proc_env)@(find_reachable_locs_in_stack memory tail)
+              | M map ->
+                  (map_find_reachable_locs memory map)@(find_reachable_locs_in_stack memory tail)
+              | _ -> (find_reachable_locs_in_stack memory tail)
+            )
+
     let rec find_all_reachable_locs : memory -> environment -> continuation -> loc list =
       fun memory env k ->
         match k with
@@ -219,6 +236,7 @@ struct
             let conti_env = snd hd in
             (find_reachable_locs memory conti_env)@(find_all_reachable_locs memory env tail)
 
+
     let rec is_mem_reachable : loc list -> (loc * value) -> bool =
       fun all_locs (loc, value) -> List.mem loc all_locs
 
@@ -226,9 +244,11 @@ struct
       fun memory all_locs ->
         List.find_all (is_mem_reachable all_locs) memory 
 
-    let rec find_reachable_memory : memory -> environment -> continuation -> memory =
-      fun memory env k ->
-        let rare_all_reachable_locs = find_all_reachable_locs memory env k in
+    let rec find_reachable_memory : stack -> memory -> environment -> continuation -> memory =
+      fun stack memory env k ->
+        let rare_all_reachable_locs_env = find_all_reachable_locs memory env k in
+        let rare_all_reachable_locs_from_stack = find_reachable_locs_in_stack memory stack in
+        let rare_all_reachable_locs = rare_all_reachable_locs_env@rare_all_reachable_locs_from_stack in
         let all_reachable_locs = remove_duplicates rare_all_reachable_locs in
         let all_reachable_locs_size = List.length all_reachable_locs in
         let all_reachable_mem = find_all_reachable_mem memory all_reachable_locs in
@@ -243,7 +263,7 @@ struct
         (increase_allocated_size(1);
         (V(L(newl()))::s, m, e, c, k))
       else(* garbage collection here!! *)
-        (let all_reachable_mem = (find_reachable_memory m e k) in
+        (let all_reachable_mem = (find_reachable_memory s m e k) in
         if is_mem_enough() then
           (allocate_memory (s, all_reachable_mem, e, c, k))
         else
