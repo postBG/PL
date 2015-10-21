@@ -112,13 +112,19 @@ module Evaluator =
 			else
 				match lexp with
 				| Lambda.Id _ -> lexp
-				| Lambda.App(Lambda.Lam(x, m), n)	-> (* \x.M N *)
+				| Lambda.App(Lambda.Lam(x, m), n) -> (* \x.M N *)
 					inner_reduce (substitute x n m)	lexp
-				| _ -> lexp
+				| Lambda.Lam(x, m) ->
+					let reduced_m = inner_reduce m (Lambda.Id "") in
+					inner_reduce (Lambda.Lam(x, reduced_m)) lexp
+				| Lambda.App(lexp1, lexp2) -> 
+					let reduced_lexp1 = inner_reduce lexp1 (Lambda.Id "") in
+					let reduced_lexp2 = inner_reduce lexp2 (Lambda.Id "") in
+					inner_reduce (Lambda.App (reduced_lexp1, reduced_lexp2)) lexp
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
 		fun exp -> 
 			let preprocessed = renaming_bound_variables exp in
-			inner_reduce preprocessed (Lambda.Id "kdfajkdasda")
+			inner_reduce preprocessed (Lambda.Id "")
 
   end
