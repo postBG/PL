@@ -90,26 +90,35 @@ module Evaluator =
 
 
 	(* this function implements [N/x] M *)
-	let rec substitute : Lambda.lexp -> string -> Lambda.lexp -> Lambda.lexp =
-		fun lexp target sub ->
+	let rec substitute : string -> Lambda.lexp -> Lambda.lexp -> Lambda.lexp =
+		fun prev after lexp ->
 			match lexp with
-			| Lambda.Id str -> 
-				if str = target then sub
+			| Lambda.Id str ->
+				if str = prev then after
 				else lexp
 			| Lambda.Lam (str, inner_lexp) ->
-				if str = target then lexp
+				if str = prev then raise (Error "cannot be happen")
 				else
-					let renamed_lexp = substitute inner_lexp target sub in
-					let fv = find_free_variables sub in
-					if StringSet.mem target fv then Lambda.Lam (str, renamed_lexp)
-					else raise (Error "renaming free variable")
+					let inner_substituted = substitute prev after inner_lexp in
+					Lambda.Lam (str, inner_substituted)
 			| Lambda.App (lexp1, lexp2) ->
-				let renamed_lexp1 = substitute lexp1 target sub in
-				let renamed_lexp2 = substitute lexp2 target sub in
-				Lambda.App (renamed_lexp1, renamed_lexp2)
-					
+				let inner_substituted1 = substitute prev after lexp1 in
+				let inner_substituted2 = substitute prev after lexp2 in
+				Lambda.App (inner_substituted1, inner_substituted2)
+
+	let rec inner_reduce : Lambda.lexp -> Lambda.lexp -> Lambda.lexp =
+		fun lexp prev_lexp ->
+			if lexp = prev_lexp then lexp
+			else
+				match lexp with
+				| Lambda.Id _ -> lexp
+				| Lambda.App(Lambda.Lam(x, m), n)	-> (* \x.M N *)
+					inner_reduce (substitute x n m)	lexp
+				| _ -> lexp
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
-		fun exp -> raise (Error "not implemented")
+		fun exp -> 
+			let preprocessed = renaming_bound_variables exp in
+			inner_reduce preprocessed (Lambda.Id "kdfajkdasda")
 
   end
