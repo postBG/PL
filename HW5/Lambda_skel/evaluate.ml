@@ -78,8 +78,11 @@ module Evaluator =
 					inner_reduce (Lambda.Lam(x, reduced_m)) lexp
 				| Lambda.App(lexp1, lexp2) -> 
 					let reduced_lexp1 = inner_reduce lexp1 (Lambda.Id "") in
-					let reduced_lexp2 = inner_reduce lexp2 (Lambda.Id "") in
-					inner_reduce (Lambda.App (reduced_lexp1, reduced_lexp2)) lexp
+					if lexp1 = reduced_lexp1 then
+						let reduced_lexp2 = inner_reduce lexp2 (Lambda.Id "") in
+						inner_reduce (Lambda.App (reduced_lexp1, reduced_lexp2)) lexp
+					else
+						inner_reduce (Lambda.App (reduced_lexp1, lexp2)) lexp
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
 		fun exp -> 
