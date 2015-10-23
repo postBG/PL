@@ -83,8 +83,11 @@ module Evaluator =
 			let reduced_lexp = beta_reduction lexp in
 			if lexp = reduced_lexp then lexp
 			else 
-			let renamed = renaming_bound_variables reduced_lexp in
-			inner_reduce renamed
+				try
+					inner_reduce reduced_lexp
+				with (Error "cannot be happen") ->
+					let renamed = renaming_bound_variables reduced_lexp in
+					inner_reduce renamed
 			
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
