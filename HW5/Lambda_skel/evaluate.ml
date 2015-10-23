@@ -65,28 +65,29 @@ module Evaluator =
 				let inner_substituted2 = substitute prev after lexp2 in
 				Lambda.App (inner_substituted1, inner_substituted2)
 
-	let rec inner_reduce : Lambda.lexp -> Lambda.lexp -> Lambda.lexp =
-		fun lexp prev_lexp ->
-			if lexp = prev_lexp then lexp
-			else
-				match lexp with
-				| Lambda.Id _ -> lexp
-				| Lambda.App(Lambda.Lam(x, m), n) -> (* \x.M N *)
-					inner_reduce (substitute x n m)	lexp
-				| Lambda.Lam(x, m) ->
-					let reduced_m = inner_reduce m (Lambda.Id "") in
-					inner_reduce (Lambda.Lam(x, reduced_m)) lexp
-				| Lambda.App(lexp1, lexp2) -> 
-					let reduced_lexp1 = inner_reduce lexp1 (Lambda.Id "") in
-					if lexp1 = reduced_lexp1 then
-						let reduced_lexp2 = inner_reduce lexp2 (Lambda.Id "") in
-						inner_reduce (Lambda.App (reduced_lexp1, reduced_lexp2)) lexp
-					else
-						inner_reduce (Lambda.App (reduced_lexp1, lexp2)) lexp
+	let rec beta_reduction : Lambda.lexp -> Lambda.lexp =
+		fun lexp ->
+			match lexp with
+			| Lambda.App(Lambda.Lam(x, m), n) -> substitute x n m
+			| Lambda.Lam(x, m) ->
+				let beta_m = beta_reduction m in
+				Lambda.Lam(x, beta_m)
+			| Lambda.App(lexp1, lexp2) ->
+				let beta_lexp1 = beta_reduction lexp1 in
+				let beta_lexp2 = beta_reduction lexp2 in
+				Lambda.App(beta_lexp1, beta_lexp2)
+			| _ -> lexp
+
+	let rec inner_reduce : Lambda.lexp -> Lambda.lexp =
+		fun lexp ->
+			let reduced_lexp = beta_reduction lexp in
+			if lexp = reduced_lexp then lexp
+			else inner_reduce reduced_lexp
+			
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
 		fun exp -> 
 			let preprocessed = renaming_bound_variables exp in
-			inner_reduce preprocessed (Lambda.Id "")
+			inner_reduce preprocessed 
 
   end
