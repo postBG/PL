@@ -9,9 +9,27 @@ module Rozetta = struct
 
 	exception Error of string
 
-	let special_loc = (Sonata.Val (Sonata.L (-1, -1)))
+	(* this is loc stack 
+		alloc is push, collect is pop*)
+	let counter = ref 0
+	let rec alloc_special_loc : int -> Sonata.obj = 
+		fun n ->
+			counter := !counter - n;
+			if (!counter >= 0) then raise (Error "Should not happen!")
+			else (Sonata.Val (Sonata.L (!counter, !counter)))
+
+	let rec collect_special_loc : int -> Sonata.obj =
+		fun n ->
+			counter := !counter + n;
+			let loc_arg = !counter in
+			if (!counter >= 0) then raise (Error "should not happen!")
+			else (Sonata.Val (Sonata.L (loc_arg, loc_arg)))
+
+	let rec top_special_loc() = 
+		if (!counter >= 0) then raise (Error "should not happen!")
+		else (Sonata.Val (Sonata.L (!counter, !counter)))
+
 	let dummy_arg = (Sonata.Val (Sonata.Z 0))
-	let dummy_arg_loc = (Sonata.Val (Sonata.L (-2, -2)))
 
 	let rec trans_value : Sm5.value -> Sonata.value =
 		fun sm5_value ->
@@ -21,7 +39,6 @@ module Rozetta = struct
 			| Sm5.Unit -> Sonata.Unit
 			| _ -> raise (Error "why compile error")
 			
-
 	(* when mode 1 -> need not return, mode 2 -> return *)
 	(* key invariant: #prev -> loc (-1, -1) -> (#prev_arg, removed C, E) *)
 	let rec inner_trans : Sm5.command -> int -> Sonata.command =
@@ -50,24 +67,36 @@ module Rozetta = struct
 			| (Sm5.EQ)::tail ->	(Sonata.EQ)::(inner_trans tail mode)
 			| (Sm5.LESS)::tail ->	(Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
-			| (Sm5.CALL)::tail -> raise (Error "not implemented")
+			| (Sm5.CALL)::tail -> 
+				let special_loc = alloc_special_loc 1 in
+				let store_prev_condition_func = store_prev_condition tail in
+				(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
+					(Sonata.PUSH store_prev_condition_func)::(Sonata.PUSH (Sonata.Id "#prev"))::
+						(Sonata.STORE)::(Sonata.CALL)::[]
 			| [] -> 
 				if (mode = 1) then
 					(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.LOAD)::
-						(Sonata.PUSH dummy_arg)::(Sonata.PUSH dummy_arg_loc)::
+						(Sonata.PUSH dummy_arg)::Sonata.MALLOC::
 							(Sonata.CALL)::[]
 				else []
-
 	and trans_obj : Sm5.obj -> Sonata.obj =
 		fun sm5_obj ->
 			match sm5_obj with
 			| Sm5.Val v -> Sonata.Val (trans_value v)
 			| Sm5.Id str -> Sonata.Id str
 			| Sm5.Fn (str, cmds) -> Sonata.Fn (str, (inner_trans cmds 1))
+	and store_prev_condition : Sm5.command -> Sonata.obj =
+		fun sm5_cmds ->
+			let stored_cmds = (inner_trans sm5_cmds 1) in
+			let prev_prev = collect_special_loc 1 in
+			Sonata.Fn("#prev_arg", 
+				(Sonata.PUSH prev_prev)::(Sonata.BIND "#prev")::stored_cmds)
+			
 
   let rec trans : Sm5.command -> Sonata.command = 
   	fun command -> (* set #prev for key invariant. #prev is always in env *)
   		let end_fun = (Sonata.Fn ("#prev_arg", [])) in
+  		let special_loc = alloc_special_loc 1 in
 
   		(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
   			(Sonata.PUSH end_fun)::(Sonata.PUSH (Sonata.Id "prev"))::(Sonata.STORE)::
