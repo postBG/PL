@@ -70,9 +70,10 @@ module Rozetta = struct
 			| (Sm5.CALL)::tail -> 
 				let special_loc = alloc_special_loc 1 in
 				let store_prev_condition_func = store_prev_condition tail in
-				(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
-					(Sonata.PUSH store_prev_condition_func)::(Sonata.PUSH (Sonata.Id "#prev"))::
-						(Sonata.STORE)::(Sonata.CALL)::[]
+				(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.BIND "#temp")::
+					(Sonata.PUSH special_loc)::(Sonata.BIND "prev")::
+						(Sonata.PUSH store_prev_condition_func)::(Sonata.PUSH (Sonata.Id "#prev"))::
+							(Sonata.STORE)::(Sonata.CALL)::[]
 			| [] -> 
 				if (mode = 1) then
 					(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.LOAD)::
@@ -88,9 +89,11 @@ module Rozetta = struct
 	and store_prev_condition : Sm5.command -> Sonata.obj =
 		fun sm5_cmds ->
 			let stored_cmds = (inner_trans sm5_cmds 1) in
-			let prev_prev = collect_special_loc 1 in
 			Sonata.Fn("#prev_arg", 
-				(Sonata.PUSH prev_prev)::(Sonata.BIND "#prev")::stored_cmds)
+				(Sonata.PUSH (Sonata.Id "#temp"))::(Sonata.BIND "#prev")::
+					(Sonata.MALLOC)::(Sonata.BIND "#temp")::(* for remove #temp *)
+						(Sonata.UNBIND)::(Sonata.POP)::stored_cmds
+			)
 			
 
   let rec trans : Sm5.command -> Sonata.command = 
@@ -99,7 +102,7 @@ module Rozetta = struct
   		let special_loc = alloc_special_loc 1 in
 
   		(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
-  			(Sonata.PUSH end_fun)::(Sonata.PUSH (Sonata.Id "prev"))::(Sonata.STORE)::
+  			(Sonata.PUSH end_fun)::(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.STORE)::
   				(inner_trans command 1)
 
 
