@@ -37,7 +37,7 @@ module Rozetta = struct
 			| Sm5.Z n -> Sonata.Z n
 			| Sm5.B b -> Sonata.B b
 			| Sm5.Unit -> Sonata.Unit
-			| _ -> raise (Error "why compile error")
+			| _ -> raise (Error "invisible variable")
 			
 	let prev = "#prev" 
 	let temp_box = "#tempbox"
@@ -69,26 +69,25 @@ module Rozetta = struct
 			| (Sm5.MUL)::tail -> (Sonata.MUL)::(inner_trans tail mode)
 			| (Sm5.DIV)::tail -> (Sonata.DIV)::(inner_trans tail mode)
 			| (Sm5.EQ)::tail ->	(Sonata.EQ)::(inner_trans tail mode)
-			| (Sm5.LESS)::tail ->	(Sonata.LESS)::(inner_trans tail mode)
+			| (Sm5.LESS)::tail -> (Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
 			| (Sm5.CALL)::tail -> 
-				let special_loc = alloc_special_loc 1 in
-				let store_prev_condition_func = store_prev_condition tail in
+					let store_prev_condition_func = store_prev_condition tail in
 
-				(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
-					(Sonata.PUSH special_loc)::(Sonata.BIND temp_box)::
-						(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
-							(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
-								(Sonata.UNBIND)::(* maintain env *)
-									(Sonata.BOX 1)::
-										(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
-											(Sonata.CALL)::[]
+					(Sonata.MALLOC)::(Sonata.BIND temp_box)::
+						(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+							(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
+								(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
+									(Sonata.UNBIND)::(* maintain env intact*)
+										(Sonata.BOX 1)::
+											(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
+												(Sonata.CALL)::[]
 			| [] -> 
-				if (mode = 1) then
-					(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
-						(Sonata.UNBOX prev)::(Sonata.PUSH dummy_arg)::Sonata.MALLOC::
-							(Sonata.CALL)::[]
-				else []
+					if (mode = 1) then
+						(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+							(Sonata.UNBOX prev)::(Sonata.PUSH dummy_arg)::Sonata.MALLOC::
+								(Sonata.CALL)::[]
+					else []
 	and trans_obj : Sm5.obj -> Sonata.obj =
 		fun sm5_obj ->
 			match sm5_obj with
@@ -112,11 +111,10 @@ module Rozetta = struct
   	let rec trans : Sm5.command -> Sonata.command = 
   		fun command -> 
   			let end_fun = (Sonata.Fn ("#prev_arg", [])) in
-  			let special_loc = alloc_special_loc 1 in
 
-  			(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
-  				(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
-  					(Sonata.PUSH special_loc)::(Sonata.BIND box)::
+  			(Sonata.MALLOC)::(Sonata.BIND box)::
+  				(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
+  					(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
   						(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
   					
 

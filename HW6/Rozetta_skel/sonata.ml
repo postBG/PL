@@ -50,9 +50,9 @@ struct
   let (@?) l x = snd (List.find (fun y -> x = fst y) l)
   let fsts l = List.map fst l 
   let rec rangecheck l r1 r2 =
-  	match l with
-	  [] -> true
-	| h::tl -> ((r1 @? h) = (r2 @? h)) && (rangecheck tl r1 r2)
+    match l with
+    [] -> true
+  | h::tl -> ((r1 @? h) = (r2 @? h)) && (rangecheck tl r1 r2)
 
   open Format
 
@@ -69,9 +69,9 @@ struct
     | R [] -> print_string "Sonata.R []"
     | R (h::t) ->
         let pf t = 
-			match t with
-			  (x, V(L(l1, l2))) -> print_string "(";printid x;print_string ",Sonata.V(";printv (L(l1,l2));print_string ")"
-   			  | _ -> raise (Invalid_argument "non Loc in Record")
+      match t with
+        (x, V(L(l1, l2))) -> print_string "(";printid x;print_string ",Sonata.V(";printv (L(l1,l2));print_string ")"
+          | _ -> raise (Invalid_argument "non Loc in Record")
         in  print_string "Sonata.R ["; pf h; List.iter (fun f -> print_string ";"; pf f) t; 
             print_string "]"
     | Unit -> print_string "Sonata.Unit" 
@@ -116,36 +116,36 @@ struct
   let newl () = loccount := !loccount + 1; (!loccount,0)
 
   let rec eval (s,m,e,c) = 
-	eval(
+  eval(
      match (s,m,e,c) with
        (_,_,_,PUSH(Val v)::c) -> (V v::s, m, e, c)
      | (_,_,_,PUSH(Id x)::c) ->
-	 	(try
-        	((e @? x)::s, m, e, c) 
+    (try
+          ((e @? x)::s, m, e, c) 
         with Not_found -> raise (Unbound_id x))
      | (_,_,_,PUSH(Fn(x,c'))::c) -> (P(x,c',e)::s, m, e, c)
      | (w::s,_,_,POP::c) -> (s, m, e, c)
      | (V(L l)::v::s,_,_,STORE::c) -> (s, (l,v)::m, e, c)
      | (V(L l)::s,_,_,LOAD::c) -> 
-	 	(try
-        	((m @? l)::s, m, e, c)
+    (try
+          ((m @? l)::s, m, e, c)
         with Not_found -> 
-			let (l1, l2) = l in raise (Unbound_loc (l1, l2)))
+      let (l1, l2) = l in raise (Unbound_loc (l1, l2)))
      | (V(B b)::s,_,_,JTR(c1,c2)::c) -> 
          (s, m, e, (if b then c1@c else (c2@c)))
      | (_,_,_,MALLOC::c) -> (V(L(newl()))::s, m, e, c)
      | (_,_,_,BOX z::c) ->
         let rec box b i s =
-			if i = 0 then V (R b)::s
-			else 
-				match s with 
-				  (M m::s) -> box (m::b) (i-1) s
-              	| _ -> raise (RunError (s,m,e,c))
+      if i = 0 then V (R b)::s
+      else 
+        match s with 
+          (M m::s) -> box (m::b) (i-1) s
+                | _ -> raise (RunError (s,m,e,c))
         in  (box [] z s,m,e,c)
      | (V (R b)::s,_,_,UNBOX x::c) ->
-	 	(try
-        	((b @? x)::s,m,e,c)
-		with Not_found -> raise (Unbound_id x))
+    (try
+          ((b @? x)::s,m,e,c)
+    with Not_found -> raise (Unbound_id x))
      | (w::s,_,_,BIND x::c) -> (s, m, (x,w)::e, c)
      | (_,_,i::e,UNBIND::c) -> (M i::s, m, e, c)
      | (V(L l)::v::P(x,c',e')::s,_,_,CALL::c) ->
@@ -155,21 +155,21 @@ struct
           print_int z; print_newline(); (s, m, e, c)
      | (V(Z z2)::V(Z z1)::s,_,_,ADD::c) -> (V(Z(z1+z2))::s, m, e, c)
      | (V(Z z2)::V(L(l1,z1))::s,_,_,ADD::c) -> if z1+z2 >= 0 
-	 then (V(L(l1,z1+z2))::s, m, e, c) 
-	 else raise (RunError (s,m,e,c))
+   then (V(L(l1,z1+z2))::s, m, e, c) 
+   else raise (RunError (s,m,e,c))
      | (V(L(l2,z2))::V(Z z1)::s,_,_,ADD::c) -> if z1+z2 >= 0 
-	 then (V(L(l2,z1+z2))::s, m, e, c)
-	 else raise (RunError (s,m,e,c))
+   then (V(L(l2,z1+z2))::s, m, e, c)
+   else raise (RunError (s,m,e,c))
      | (V(Z z2)::V(Z z1)::s,_,_,SUB::c) -> (V(Z(z1-z2))::s, m, e, c)
      | (V(Z z2)::V(L(l1,z1))::s,_,_,SUB::c) -> if z1-z2 >= 0 
-	 then (V(L(l1,z1-z2))::s, m, e, c)
-	 else raise (RunError (s,m,e,c))
+   then (V(L(l1,z1-z2))::s, m, e, c)
+   else raise (RunError (s,m,e,c))
      | (V(L(l2,z2))::V(L(l1,z1))::s,_,_,SUB::c) -> if l1 = l2 then (V(Z(z1-z2))::s, m, e, c)
-	 												else raise (RunError (s,m,e,c))
+                          else raise (RunError (s,m,e,c))
      | (V(Z z2)::V(Z z1)::s,_,_,MUL::c) -> (V(Z(z1*z2))::s, m, e, c)
      | (V(Z z2)::V(Z z1)::s,_,_,DIV::c) -> if z2 = 0 
-	 then raise (RunError (s,m,e,c))
-	 else (V(Z(z1/z2))::s, m, e, c) 
+   then raise (RunError (s,m,e,c))
+   else (V(Z(z1/z2))::s, m, e, c) 
      | (V(Z z2)::V(Z z1)::s,_,_,EQ::c) -> (V(B(z1=z2))::s, m, e, c)
      | (V(B b2)::V(B b1)::s,_,_,EQ::c) -> (V(B(b1=b2))::s, m, e, c)
      | (V(R r2)::V(R r1)::s,_,_,EQ::c) ->
@@ -180,11 +180,11 @@ struct
      | (V _::V _::s,_,_,EQ::c) -> (V(B false)::s,m,e,c) 
      | (V(Z z2)::V(Z z1)::s,_,_,LESS::c) -> (V(B(z1<z2))::s, m, e, c)
      | (V(L(z1,z2))::V(L(l1,l2))::s,_,_,LESS::c) -> if z1 = l1 then (V(B(l2<z2))::s, m, e, c)
-	 												else raise (RunError (s,m,e,c))
+                          else raise (RunError (s,m,e,c))
      | (V(B b)::s,_,_,NOT::c) -> (V(B(not b))::s, m, e, c)
      | (_,_,_,[]) -> raise End
      | _ -> raise (RunError (s,m,e,c))
-	)
+  )
   let print_error x = printf "SM5 evaluation error: ";
     (match x with
        Unbound_id x -> printf "unbound id '%s'.@." x
@@ -194,8 +194,8 @@ struct
     print_flush()  
 
   let run c = 
-	try
-		(ignore (eval ([],[],[],c))) 
+  try
+    (ignore (eval ([],[],[],c))) 
     with End -> ()
     | x -> print_error x
 end
