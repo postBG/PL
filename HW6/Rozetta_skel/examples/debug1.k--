@@ -1,0 +1,3 @@
+let proc incr(n) = n + 1 in
+let y := 1 in
+write incr(y)

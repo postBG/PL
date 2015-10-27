@@ -71,7 +71,7 @@ module Rozetta = struct
 				let special_loc = alloc_special_loc 1 in
 				let store_prev_condition_func = store_prev_condition tail in
 				(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.BIND "#temp")::
-					(Sonata.PUSH special_loc)::(Sonata.BIND "prev")::
+					(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
 						(Sonata.PUSH store_prev_condition_func)::(Sonata.PUSH (Sonata.Id "#prev"))::
 							(Sonata.STORE)::(Sonata.CALL)::[]
 			| [] -> 
@@ -104,8 +104,6 @@ module Rozetta = struct
   		(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
   			(Sonata.PUSH end_fun)::(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.STORE)::
   				(inner_trans command 1)
-
-
 
 
 end
