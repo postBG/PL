@@ -40,7 +40,7 @@ module Rozetta = struct
 			| _ -> raise (Error "why compile error")
 			
 	let prev = "#prev" 
-	let temp = "#temp"
+	let temp_box = "#tempbox"
 	let box = "#box"
 
 	(* when mode 1 -> need not return, mode 2 -> return *)
@@ -72,13 +72,17 @@ module Rozetta = struct
 			| (Sm5.LESS)::tail ->	(Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
 			| (Sm5.CALL)::tail -> 
+				let special_loc = alloc_special_loc 1 in
 				let store_prev_condition_func = store_prev_condition tail in
 
 				(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
-					(Sonata.PUSH (Sonata.Id temp))::(Sonata.STORE)::
-						(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::(Sonata.UNBIND)::(* maintain env *)
-							(Sonata.BOX 1)::(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
-								(Sonata.CALL)::[]
+					(Sonata.PUSH special_loc)::(Sonata.BIND temp_box)::
+						(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
+							(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
+								(Sonata.UNBIND)::(* maintain env *)
+									(Sonata.BOX 1)::
+										(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
+											(Sonata.CALL)::[]
 			| [] -> 
 				if (mode = 1) then
 					(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
@@ -95,9 +99,10 @@ module Rozetta = struct
 		fun sm5_cmds ->
 			let stored_cmds = (inner_trans sm5_cmds 1) in
 			Sonata.Fn("#prev_arg", 
-				(Sonata.PUSH (Sonata.Id temp))::(Sonata.LOAD)::
+				(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.LOAD)::
 					(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(* recover box first *)
-						stored_cmds
+						(Sonata.UNBIND)::(Sonata.POP)::
+							stored_cmds
 			)
 			
 
@@ -107,14 +112,12 @@ module Rozetta = struct
   	let rec trans : Sm5.command -> Sonata.command = 
   		fun command -> 
   			let end_fun = (Sonata.Fn ("#prev_arg", [])) in
-  			let special_loc1 = alloc_special_loc 1 in
-  			let special_loc2 = alloc_special_loc 1 in
+  			let special_loc = alloc_special_loc 1 in
 
   			(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
   				(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
-  					(Sonata.PUSH special_loc1)::(Sonata.BIND box)::
-  						(Sonata.PUSH special_loc2)::(Sonata.BIND temp)::
-  							(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
+  					(Sonata.PUSH special_loc)::(Sonata.BIND box)::
+  						(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
   					
 
 end
