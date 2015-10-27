@@ -72,7 +72,8 @@ module Rozetta = struct
 			| (Sm5.LESS)::tail -> (Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
 			| (Sm5.CALL)::tail -> 
-					let store_prev_condition_func = store_prev_condition tail in
+					let store_prev_condition_cmds = store_prev_condition tail in
+					let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
 
 					(Sonata.MALLOC)::(Sonata.BIND temp_box)::
 						(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
@@ -94,15 +95,14 @@ module Rozetta = struct
 			| Sm5.Val v -> Sonata.Val (trans_value v)
 			| Sm5.Id str -> Sonata.Id str
 			| Sm5.Fn (str, cmds) -> Sonata.Fn (str, (inner_trans cmds 1))
-	and store_prev_condition : Sm5.command -> Sonata.obj =
+	and store_prev_condition : Sm5.command -> Sonata.command =
 		fun sm5_cmds ->
-			let stored_cmds = (inner_trans sm5_cmds 1) in
-			Sonata.Fn("#prev_arg", 
-				(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.LOAD)::
-					(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(* recover box first *)
-						(Sonata.UNBIND)::(Sonata.POP)::
-							stored_cmds
-			)
+			let stored_cmds = (inner_trans sm5_cmds 1) in 
+			(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.LOAD)::
+				(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(* recover box first *)
+					(Sonata.UNBIND)::(Sonata.POP)::
+						stored_cmds
+			
 			
 
 	(* set #box for key invariant. #box is always in env 
@@ -112,9 +112,9 @@ module Rozetta = struct
   		fun command -> 
   			let end_fun = (Sonata.Fn ("#prev_arg", [])) in
 
-  			(Sonata.MALLOC)::(Sonata.BIND box)::
-  				(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
-  					(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
+  			(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
+  				(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
+  					(Sonata.MALLOC)::(Sonata.BIND box)::
   						(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
   					
 
