@@ -9,26 +9,6 @@ module Rozetta = struct
 
 	exception Error of string
 
-	(* this is loc stack 
-		alloc is push, collect is pop*)
-	let counter = ref 0
-	let rec alloc_special_loc : int -> Sonata.obj = 
-		fun n ->
-			counter := !counter - n;
-			if (!counter >= 0) then raise (Error "Should not happen!")
-			else (Sonata.Val (Sonata.L (!counter, !counter)))
-
-	let rec collect_special_loc : int -> Sonata.obj =
-		fun n ->
-			counter := !counter + n;
-			let loc_arg = !counter in
-			if (!counter >= 0) then raise (Error "should not happen!")
-			else (Sonata.Val (Sonata.L (loc_arg, loc_arg)))
-
-	let rec top_special_loc() = 
-		if (!counter >= 0) then raise (Error "should not happen!")
-		else (Sonata.Val (Sonata.L (!counter, !counter)))
-
 	let dummy_arg = (Sonata.Val (Sonata.Z 0))
 
 	let rec trans_value : Sm5.value -> Sonata.value =
@@ -43,7 +23,7 @@ module Rozetta = struct
 	let temp_box = "#tempbox"
 	let box = "#box"
 
-	(* when mode 1 -> return(function type), mode 2 -> not return(not function type) *)
+	(* when mode 1 -> need not return, mode 2 -> return *)
 	(* key invariant: #prev -> loc (-1, -1) -> (#prev_arg, removed C, E) *)
 	let rec inner_trans : Sm5.command -> int -> Sonata.command =
 		fun sm5_cmds mode ->
