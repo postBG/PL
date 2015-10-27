@@ -72,17 +72,8 @@ module Rozetta = struct
 			| (Sm5.LESS)::tail -> (Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
 			| (Sm5.CALL)::tail -> 
-					let store_prev_condition_cmds = store_prev_condition tail in
-					let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
-
-					(Sonata.MALLOC)::(Sonata.BIND temp_box)::
-						(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
-							(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
-								(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
-									(Sonata.UNBIND)::(* maintain env intact*)
-										(Sonata.BOX 1)::
-											(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
-												(Sonata.CALL)::[]
+					let set_up_rec_cmds = set_up_recursive tail in
+					set_up_rec_cmds@[(Sonata.CALL)]
 			| [] -> 
 					if (mode = 1) then
 						(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
@@ -95,6 +86,18 @@ module Rozetta = struct
 			| Sm5.Val v -> Sonata.Val (trans_value v)
 			| Sm5.Id str -> Sonata.Id str
 			| Sm5.Fn (str, cmds) -> Sonata.Fn (str, (inner_trans cmds 1))
+	and set_up_recursive : Sm5.command -> Sonata.command = (* exchange box pointer *)	
+		fun sm5_cmds ->	
+			let store_prev_condition_cmds = store_prev_condition sm5_cmds in
+			let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
+
+			(Sonata.MALLOC)::(Sonata.BIND temp_box)::
+				(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+					(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
+						(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
+							(Sonata.UNBIND)::(* maintain env intact*)
+								(Sonata.BOX 1)::
+									(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::[]
 	and store_prev_condition : Sm5.command -> Sonata.command =
 		fun sm5_cmds ->
 			let stored_cmds = (inner_trans sm5_cmds 1) in 
@@ -102,9 +105,8 @@ module Rozetta = struct
 				(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(* recover box first *)
 					(Sonata.UNBIND)::(Sonata.POP)::
 						stored_cmds
+	
 			
-			
-
 	(* set #box for key invariant. #box is always in env 
 		#box has [("#prev", caller)]*)
 	(* where caller = (x, C, E) *)
