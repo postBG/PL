@@ -39,6 +39,10 @@ module Rozetta = struct
 			| Sm5.Unit -> Sonata.Unit
 			| _ -> raise (Error "why compile error")
 			
+	let prev = "#prev" 
+	let temp = "#temp"
+	let box = "#box"
+
 	(* when mode 1 -> need not return, mode 2 -> return *)
 	(* key invariant: #prev -> loc (-1, -1) -> (#prev_arg, removed C, E) *)
 	let rec inner_trans : Sm5.command -> int -> Sonata.command =
@@ -68,16 +72,17 @@ module Rozetta = struct
 			| (Sm5.LESS)::tail ->	(Sonata.LESS)::(inner_trans tail mode)
 			| (Sm5.NOT)::tail -> (Sonata.NOT)::(inner_trans tail mode)
 			| (Sm5.CALL)::tail -> 
-				let special_loc = alloc_special_loc 1 in
 				let store_prev_condition_func = store_prev_condition tail in
-				(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.BIND "#temp")::(* address store *)
-					(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
-						(Sonata.PUSH store_prev_condition_func)::(Sonata.PUSH (Sonata.Id "#prev"))::
-							(Sonata.STORE)::(Sonata.CALL)::[]
+
+				(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+					(Sonata.PUSH (Sonata.Id temp))::(Sonata.STORE)::
+						(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::(Sonata.UNBIND)::(* maintain env *)
+							(Sonata.BOX 1)::(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::
+								(Sonata.CALL)::[]
 			| [] -> 
 				if (mode = 1) then
-					(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.LOAD)::
-						(Sonata.PUSH dummy_arg)::Sonata.MALLOC::
+					(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+						(Sonata.UNBOX prev)::(Sonata.PUSH dummy_arg)::Sonata.MALLOC::
 							(Sonata.CALL)::[]
 				else []
 	and trans_obj : Sm5.obj -> Sonata.obj =
@@ -90,20 +95,26 @@ module Rozetta = struct
 		fun sm5_cmds ->
 			let stored_cmds = (inner_trans sm5_cmds 1) in
 			Sonata.Fn("#prev_arg", 
-				(Sonata.PUSH (Sonata.Id "#temp"))::(Sonata.BIND "#prev")::
-					(Sonata.MALLOC)::(Sonata.BIND "#temp")::(* for remove #temp from env *)
-						(Sonata.UNBIND)::(Sonata.POP)::stored_cmds
+				(Sonata.PUSH (Sonata.Id temp))::(Sonata.LOAD)::
+					(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(* recover box first *)
+						stored_cmds
 			)
 			
 
-  let rec trans : Sm5.command -> Sonata.command = 
-  	fun command -> (* set #prev for key invariant. #prev is always in env *)
-  		let end_fun = (Sonata.Fn ("#prev_arg", [])) in
-  		let special_loc = alloc_special_loc 1 in
+	(* set #box for key invariant. #box is always in env 
+		#box has [("#prev", caller)]*)
+	(* where caller = (x, C, E) *)
+  	let rec trans : Sm5.command -> Sonata.command = 
+  		fun command -> 
+  			let end_fun = (Sonata.Fn ("#prev_arg", [])) in
+  			let special_loc1 = alloc_special_loc 1 in
+  			let special_loc2 = alloc_special_loc 1 in
 
-  		(Sonata.PUSH special_loc)::(Sonata.BIND "#prev")::
-  			(Sonata.PUSH end_fun)::(Sonata.PUSH (Sonata.Id "#prev"))::(Sonata.STORE)::
-  				(inner_trans command 1)
-
+  			(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
+  				(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
+  					(Sonata.PUSH special_loc1)::(Sonata.BIND box)::
+  						(Sonata.PUSH special_loc2)::(Sonata.BIND temp)::
+  							(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
+  					
 
 end
