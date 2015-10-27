@@ -1,0 +1,2 @@
+let proc incr(n) = (n + 1) in
+write (incr(1))
