@@ -43,7 +43,7 @@ module Rozetta = struct
 	let temp_box = "#tempbox"
 	let box = "#box"
 
-	(* when mode 1 -> need not return, mode 2 -> return *)
+	(* when mode 1 -> return(function type), mode 2 -> not return(not function type) *)
 	(* key invariant: #prev -> loc (-1, -1) -> (#prev_arg, removed C, E) *)
 	let rec inner_trans : Sm5.command -> int -> Sonata.command =
 		fun sm5_cmds mode ->
@@ -90,9 +90,8 @@ module Rozetta = struct
 		fun sm5_cmds ->	
 			let store_prev_condition_cmds = store_prev_condition sm5_cmds in
 			let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
-
-			(Sonata.MALLOC)::(Sonata.BIND temp_box)::
-				(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::
+			(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::	
+				(Sonata.MALLOC)::(Sonata.BIND temp_box)::
 					(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
 						(Sonata.PUSH store_prev_condition_func)::(Sonata.BIND prev)::
 							(Sonata.UNBIND)::(* maintain env intact*)
