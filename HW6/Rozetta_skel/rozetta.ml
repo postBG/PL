@@ -10,6 +10,12 @@ module Rozetta = struct
 	exception Error of string
 
 	let dummy_arg = (Sonata.Val (Sonata.Z 0))
+	let counter = ref 0
+	let newsl() = counter := !counter - 1; (!counter, 0)
+
+	let alloc_special_loc() =
+		let s_loc = newsl() in
+		(Sonata.Val (Sonata.L s_loc))
 
 	let rec trans_value : Sm5.value -> Sonata.value =
 		fun sm5_value ->
@@ -70,6 +76,7 @@ module Rozetta = struct
 		fun sm5_cmds ->	
 			let store_prev_condition_cmds = store_prev_condition sm5_cmds in
 			let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
+
 			(Sonata.PUSH (Sonata.Id box))::(Sonata.LOAD)::	
 				(Sonata.MALLOC)::(Sonata.BIND temp_box)::
 					(Sonata.PUSH (Sonata.Id temp_box))::(Sonata.STORE)::
@@ -92,10 +99,11 @@ module Rozetta = struct
   	let rec trans : Sm5.command -> Sonata.command = 
   		fun command -> 
   			let end_fun = (Sonata.Fn ("#prev_arg", [])) in
+  			let special_loc = alloc_special_loc() in
 
   			(Sonata.PUSH end_fun)::(Sonata.BIND prev)::(* ("prev", caller) *)
   				(Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", caller)]::S *)
-  					(Sonata.MALLOC)::(Sonata.BIND box)::
+  					(Sonata.PUSH special_loc)::(Sonata.BIND box)::
   						(Sonata.PUSH (Sonata.Id box))::(Sonata.STORE)::(inner_trans command 1)
   					
 
