@@ -61,7 +61,12 @@ module Encoder =
 				| Fn (x, e) -> Lambda.Lam (x, encode e)
 				| App (e1, e2) -> Lambda.App (encode e1, encode e2)
 				| Rec (f, x, e) -> raise (Error "not implemented")
-				| Ifz (e1, e2, e3) -> raise (Error "not implemented") 
+				| Ifz (e1, e2, e3) -> 
+						Lambda.App
+						(
+							Lambda.App(is_zero, encode e1),
+							Lambda.App(encode e2, encode e3) 
+						)
 				| Pair (e1, e2) -> raise (Error "not implemented") 
 				| Fst e -> raise (Error "not implemented") 
 				| Snd e -> raise (Error "not implemented") 
