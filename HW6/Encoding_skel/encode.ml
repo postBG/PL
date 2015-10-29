@@ -25,6 +25,34 @@ module Encoder =
 
 	  let rec false_of_bool = Lambda.Lam ("#x", (Lambda.Lam ("#y", Lambda.Id "#y")))
 
+	  let rec is_zero = 
+	  	Lambda.Lam 
+	  	(
+	  		"#n", 
+	  		Lambda.Lam
+	  		(
+	  			"#x", 
+	  			Lambda.Lam
+	  			(
+	  				"#y", 
+	  				Lambda.App
+	  				(
+	  					Lambda.Id "#n",
+	  					Lambda.App
+	  					(
+	  						Lambda.Lam
+	  						(
+	  							"#x",
+	  							Lambda.Id "#y"
+	  						),
+	  						Lambda.Id "#x"
+	  					)
+	  				)
+	  			)
+	  		)
+	  	)
+
+
 		let rec encode : M.mexp -> Lambda.lexp =
 			fun pgm ->
 				match pgm with 
