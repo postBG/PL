@@ -1,7 +1,7 @@
 all: run
 
-run: lexer.cmo parser.cmo m.cmo encode.cmo main.cmo
-	ocamlc -o run lexer.cmo parser.cmo encode.cmo m.cmo pp.cmo main.cmo
+run: lexer.cmo parser.cmo evaluate.cmo m.cmo encode.cmo main.cmo
+	ocamlc -o run lexer.cmo parser.cmo evaluate.cmo encode.cmo m.cmo pp.cmo main.cmo
 
 lambda.cmo : lambda.ml
 	ocamlc -c lambda.ml
@@ -11,6 +11,9 @@ m.cmo : m.ml lambda.cmo
 
 pp.cmo : pp.ml
 	ocamlc -c pp.ml
+
+evaluate.cmo : evaluate.ml lambda.cmo 
+	ocamlc -c evaluate.ml 
 
 encode.cmo : encode.ml m.cmo
 	ocamlc -c encode.ml
@@ -27,7 +30,7 @@ parser.cmi: parser.mli
 parser.cmo: parser.ml parser.cmi
 	ocamlc -c parser.ml
 
-main.cmo : encode.cmo main.ml pp.cmo
+main.cmo : evaluate.cmo encode.cmo main.ml pp.cmo
 	ocamlc -c main.ml
 
 lexer.cmo: lexer.ml

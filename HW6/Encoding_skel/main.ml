@@ -8,6 +8,8 @@ open Encode
 open Pp
 open M
 
+open Evaluate
+
 let main () =
     let src = ref "" in
     let _ =
@@ -26,6 +28,12 @@ let main () =
 	print_string "\n\n\n============\n";
 	print_string "output program\n";
 	print_string "=============\n";
-	Pp.pp (Encoder.encode pgm)
+	let output = Encoder.encode pgm in 
+	Pp.pp (output);
+	print_string "\n\n\n============\n"; 
+	print_string "reduced program\n"; 
+   	print_string "=============\n"; 
+   	Pp.pp (Evaluator.reduce output); 
+   	print_string "\n"
 
 let _ = main ()

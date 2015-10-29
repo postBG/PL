@@ -150,23 +150,22 @@ module Encoder =
 	  				Lambda.Lam
 	  				(
 	  					"#x",
-	  					Lambda.App
-	  					(
-	  						Lambda.Id "#n",
-	  						Lambda.App
+	  					Lambda.App(
+		  					Lambda.App
+		  					(
+		  						Lambda.Id "#n",
+		  						Lambda.Id "#f"
+		  					),
+		  					Lambda.App
 	  						(
-	  							Lambda.Id "#f",
-	  							Lambda.App
-	  							(
-	  								Lambda.App
-	  								(
-	  									Lambda.Id "#n'",
-	  									Lambda.Id "#f"
-	  								),
-	  								Lambda.Id "#x"
-	  							)
+  								Lambda.App
+  								(
+  									Lambda.Id "#n'",
+  									Lambda.Id "#f"
+  								),
+  								Lambda.Id "#x"
 	  						)
-	  					)
+		  				)
 	  				)
 	  			)
 	  		)
@@ -181,16 +180,15 @@ module Encoder =
 				| Fn (x, e) -> Lambda.Lam (x, encode e)
 				| App (e1, e2) -> Lambda.App (encode e1, encode e2)
 				| Rec (f, x, e) -> raise (Error "not implemented")
-				| Ifz (e1, e2, e3) -> 
-						Lambda.App
-						(
-							Lambda.App(is_zero, encode e1),
-							Lambda.App(encode e2, encode e3) 
-						)
+				| Ifz (e1, e2, e3) -> 						
+						Lambda.App(Lambda.App(Lambda.App(is_zero, encode e1),encode e2),encode e3)
 				| Pair (e1, e2) -> raise (Error "not implemented") 
 				| Fst e -> raise (Error "not implemented") 
 				| Snd e -> raise (Error "not implemented") 
-				| Add (e1, e2) -> raise (Error "not implemented") 
+				| Add (e1, e2) -> 
+						let encoded_e1 = encode e1 in
+						let encoded_e2 = encode e2 in
+						Lambda.App(Lambda.App(add, encoded_e1), encoded_e2) 
 				| Sub (e1, e2) -> raise (Error "not implemented") 
 				| And (e1, e2) -> raise (Error "not implemented") 
 				 
