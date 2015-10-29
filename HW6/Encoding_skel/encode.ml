@@ -137,6 +137,42 @@ module Encoder =
 	  		)
 	  	)
 
+	  let rec add =
+	  	Lambda.Lam
+	  	(
+	  		"#n",
+	  		Lambda.Lam
+	  		(
+	  			"#n'",
+	  			Lambda.Lam
+	  			(
+	  				"#f",
+	  				Lambda.Lam
+	  				(
+	  					"#x",
+	  					Lambda.App
+	  					(
+	  						Lambda.Id "#n",
+	  						Lambda.App
+	  						(
+	  							Lambda.Id "#f",
+	  							Lambda.App
+	  							(
+	  								Lambda.App
+	  								(
+	  									Lambda.Id "#n'",
+	  									Lambda.Id "#f"
+	  								),
+	  								Lambda.Id "#x"
+	  							)
+	  						)
+	  					)
+	  				)
+	  			)
+	  		)
+	  	)
+	
+
 		let rec encode : M.mexp -> Lambda.lexp =
 			fun pgm ->
 				match pgm with 
