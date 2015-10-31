@@ -56,7 +56,11 @@ module Evaluator =
 				if str = prev then after
 				else lexp
 			| Lambda.Lam (str, inner_lexp) ->
-				if str = prev then raise (Error "cannot be happen")
+				if str = prev 
+				then 
+					(* raise Error("cannot be happen") *)
+					let renamed = renaming_bound_variables lexp in
+					substitute prev after renamed
 				else
 					let inner_substituted = substitute prev after inner_lexp in
 					Lambda.Lam (str, inner_substituted)
