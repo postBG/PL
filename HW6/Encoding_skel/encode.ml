@@ -89,32 +89,6 @@ module Encoder =
 	  					Lambda.Id "#x"
 	  				))))
 
-	  let rec succ =
-	  	Lambda.Lam
-	  	(
-	  		"#n",
-	  		Lambda.Lam
-	  		(
-	  			"#f",
-	  			Lambda.Lam
-	  			(
-	  				"#x",
-	  				Lambda.App
-	  				(
-	  					Lambda.Id "#f",
-	  					Lambda.App
-	  					(
-	  						Lambda.Id "#n",
-	  						Lambda.App
-	  						(
-	  							Lambda.Id "#f",
-	  							Lambda.Id "#x"
-	  						)
-	  					)
-	  				)
-	  			)
-	  		)
-	  	)
 
 	  let rec add =
 			Lambda.Lam("#n",Lambda.Lam("#n'",Lambda.Lam("#f",Lambda.Lam("#x",
