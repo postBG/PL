@@ -25,63 +25,6 @@ module Encoder =
 
 	  let rec false_of_bool = Lambda.Lam ("#x", (Lambda.Lam ("#y", Lambda.Id "#y")))
 
-	  let rec not_of_bool =
-	  	Lambda.Lam
-	  	(
-	  		"#b",
-	  		Lambda.Lam
-	  		(
-	  			"#x",
-	  			Lambda.Lam
-	  			(
-	  				"#y",
-	  				Lambda.App
-	  				(
-	  					Lambda.Id "#b",
-	  					Lambda.App
-	  					(
-	  						Lambda.Id "#y",
-	  						Lambda.Id "#x"
-	  					)
-	  				)
-	  			)
-	  		)
-	  	)
-
-	  let rec and_of_bool =
-	  	Lambda.Lam
-	  	(
-	  		"#b",
-	  		Lambda.Lam
-	  		(
-	  			"#b'",
-	  			Lambda.Lam
-	  			(
-	  				"#x",
-	  				Lambda.Lam
-	  				(
-	  					"#y",
-	  					Lambda.App
-	  					(	
-		  					Lambda.App
-		  					(
-		  						Lambda.Id "#b",
-			  					Lambda.App
-			  					(
-			  						Lambda.App(
-			  							Lambda.Id "#c",
-			  							Lambda.Id "#x"
-			  						),
-			  						Lambda.Id "#y"
-			  					)	
-		  					),
-		  					Lambda.Id "#y"
-		  				)
-	  				)
-	  			)
-	  		)
-	  	)
-
 	  let rec is_zero = 
 	  	Lambda.Lam("#n", Lambda.Lam("#x", Lambda.Lam("#y", 
 	  				Lambda.App(Lambda.App(Lambda.Id "#n",
@@ -133,7 +76,8 @@ module Encoder =
 						let encoded_e2 = encode e2 in
 						Lambda.App(Lambda.App(add, encoded_e1), encoded_e2) 
 				| Sub (e1, e2) -> raise (Error "not implemented") 
-				| And (e1, e2) -> raise (Error "not implemented")
+				| And (e1, e2) -> 
+						encode (Ifz (e1, (Num 0), Ifz(e2, Num 0, Num 1)))
 				 
 
  end
