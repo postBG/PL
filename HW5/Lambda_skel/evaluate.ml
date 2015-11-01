@@ -8,13 +8,14 @@ module Evaluator =
   struct
 	exception Error of string
 
-	let rec find_substitution : (string * string) list -> string -> string =
-		fun sub_list str ->
-			snd (List.find (fun oldXnew -> (fst oldXnew) = str) sub_list)
-
 	let count = ref 0
 	let incr_count n = count := !count + n
 	let decr_count n = count := !count - n
+
+	let make_new_name : string -> string =
+		fun str ->
+			incr_count 1;
+			str^(string_of_int (!count))
 
 	let rec inner_renaming : Lambda.lexp -> string -> string -> Lambda.lexp =
 		fun lexp old_str new_str ->
@@ -37,8 +38,7 @@ module Evaluator =
 			match lexp with
 			| Lambda.Lam (str, inner_lexp) ->
 				let rare_renamed_lexp = renaming_bound_variables inner_lexp in
-				let new_str = str^(string_of_int (!count)) in
-				incr_count 1;
+				let new_str = make_new_name str in
 				let renamed_lexp = inner_renaming rare_renamed_lexp str new_str in
 				Lambda.Lam (new_str, renamed_lexp)
 			| Lambda.App (lexp1, lexp2) ->
