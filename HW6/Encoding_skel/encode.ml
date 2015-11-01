@@ -55,6 +55,30 @@ module Encoder =
 				Lambda.Lam("#x", Lambda.Lam("#y", Lambda.Id "#y"))
 			))
 
+		let rec pred =
+			Lambda.Lam("#n", Lambda.Lam("#f", Lambda.Lam("#x",
+				Lambda.App(
+					Lambda.App(
+						Lambda.App(
+							Lambda.Id "#n",
+							Lambda.Lam("#g",Lambda.Lam("#h", 
+								Lambda.App(
+									Lambda.Id "#h",
+									Lambda.App(Lambda.Id "#g", Lambda.Id "#f")))
+							)
+						),
+						Lambda.Lam("#u", Lambda.Id "#x")
+					),
+					Lambda.Lam("#u", Lambda.Id "#u")
+				))))
+
+		let rec subtract =
+			Lambda.Lam("#m", Lambda.Lam("#n", 
+				Lambda.App(
+					Lambda.App(Lambda.Id "#n", pred),
+					Lambda.Id "#m"
+				)))
+
 		let rec encode : M.mexp -> Lambda.lexp =
 			fun pgm ->
 				match pgm with 
@@ -75,7 +99,10 @@ module Encoder =
 						let encoded_e1 = encode e1 in
 						let encoded_e2 = encode e2 in
 						Lambda.App(Lambda.App(add, encoded_e1), encoded_e2) 
-				| Sub (e1, e2) -> raise (Error "not implemented") 
+				| Sub (e1, e2) -> 
+						let encoded_e1 = encode e1 in
+						let encoded_e2 = encode e2 in 
+						Lambda.App(Lambda.App(subtract, encoded_e1), encoded_e2)
 				| And (e1, e2) -> 
 						encode (Ifz (e1, (Num 0), Ifz(e2, Num 0, Num 1)))
 				 
