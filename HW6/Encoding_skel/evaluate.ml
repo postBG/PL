@@ -1,4 +1,5 @@
 
+open Lambda
 module Evaluator =
 struct
   exception Error of string
@@ -20,11 +21,14 @@ let rec changeexp : string-> string -> Lambda.lexp -> Lambda.lexp
 let rec alpha : Lambda.lexp-> string list -> (string list*Lambda.lexp)
 = fun e1 clist -> match e1 with
         | Id(str2) -> (str2::[],e1)
-        | Lam(str2,l) -> let result=alpha l clist in
-                if List.exists (fun(x) -> x=str2) clist
-                then let newname=makenewname str2 1 (List.concat([clist;(fst result)])) in
-                        (newname::(fst result),Lam(newname,changeexp str2 newname (snd result)))
-                else (str2::(fst result),Lam(str2,(snd result)))
+        | Lam(str2,l) -> 
+            let result=alpha l clist in
+            if List.exists (fun(x) -> x=str2) clist
+            then 
+                let newname=makenewname str2 1 (List.concat([clist;(fst result)])) in
+                (newname::(fst result),Lam(newname,changeexp str2 newname (snd result)))
+            else 
+                (str2::(fst result),Lam(str2,(snd result)))
         | App(l1,l2) -> let r1=alpha l1 clist in
                 let r2=alpha l2 clist in
                         (List.concat([(fst r1);(fst r2)]),App((snd r1),(snd r2)))

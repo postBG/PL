@@ -62,22 +62,21 @@ module Encoder =
 	  				(
 	  					"#y",
 	  					Lambda.App
-	  					(
-	  						Lambda.Id "#b",
-	  						Lambda.App
-	  						(
-		  						Lambda.App
-		  						(
-		  							Lambda.Id "#c",
-		  							Lambda.App
-		  							(
-		  								Lambda.Id "#x",
-		  								Lambda.Id "#y"
-		  							)
-		  						),
-		  						Lambda.Id "#y"
-	  						)
-	  					)
+	  					(	
+		  					Lambda.App
+		  					(
+		  						Lambda.Id "#b",
+			  					Lambda.App
+			  					(
+			  						Lambda.App(
+			  							Lambda.Id "#c",
+			  							Lambda.Id "#x"
+			  						),
+			  						Lambda.Id "#y"
+			  					)	
+		  					),
+		  					Lambda.Id "#y"
+		  				)
 	  				)
 	  			)
 	  		)
@@ -138,38 +137,10 @@ module Encoder =
 	  	)
 
 	  let rec add =
-	  	Lambda.Lam
-	  	(
-	  		"#n",
-	  		Lambda.Lam
-	  		(
-	  			"#n'",
-	  			Lambda.Lam
-	  			(
-	  				"#f",
-	  				Lambda.Lam
-	  				(
-	  					"#x",
-	  					Lambda.App(
-		  					Lambda.App
-		  					(
-		  						Lambda.Id "#n",
-		  						Lambda.Id "#f"
-		  					),
-		  					Lambda.App
-	  						(
-  								Lambda.App
-  								(
-  									Lambda.Id "#n'",
-  									Lambda.Id "#f"
-  								),
-  								Lambda.Id "#x"
-	  						)
-		  				)
-	  				)
-	  			)
-	  		)
-	  	)
+			Lambda.Lam("#n",Lambda.Lam("#n'",Lambda.Lam("#f",Lambda.Lam("#x",
+				Lambda.App(Lambda.App(Lambda.Id "#n",Lambda.Id "#f"),
+					Lambda.App(Lambda.App(Lambda.Id "#n'",Lambda.Id "#f"),
+						Lambda.Id "#x"))))))
 	
 
 		let rec encode : M.mexp -> Lambda.lexp =
@@ -190,7 +161,7 @@ module Encoder =
 						let encoded_e2 = encode e2 in
 						Lambda.App(Lambda.App(add, encoded_e1), encoded_e2) 
 				| Sub (e1, e2) -> raise (Error "not implemented") 
-				| And (e1, e2) -> raise (Error "not implemented") 
+				| And (e1, e2) -> raise (Error "not implemented")
 				 
 
  end
