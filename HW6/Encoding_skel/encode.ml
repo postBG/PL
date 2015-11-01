@@ -21,10 +21,6 @@ module Encoder =
 	  		let f_form = inner_make_num n in
 	  		Lambda.Lam ("#f", Lambda.Lam("#x", f_form))
 
-	  let rec true_of_bool = Lambda.Lam ("#x", (Lambda.Lam ("#y", Lambda.Id "#x")))
-
-	  let rec false_of_bool = Lambda.Lam ("#x", (Lambda.Lam ("#y", Lambda.Id "#y")))
-
 	  let rec is_zero = 
 	  	Lambda.Lam("#n", Lambda.Lam("#x", Lambda.Lam("#y", 
 	  				Lambda.App(Lambda.App(Lambda.Id "#n",
@@ -79,6 +75,22 @@ module Encoder =
 					Lambda.Id "#m"
 				)))
 
+		let rec y_fun = 
+			Lambda.Lam("#f", 
+				Lambda.App(
+					Lambda.Lam("#x",
+						Lambda.App(
+							Lambda.Id "#f",
+							Lambda.App(Lambda.Id "#x", Lambda.Id "#x")
+					)),
+					Lambda.Lam("#x",
+						Lambda.App(
+							Lambda.Id "#f",
+							Lambda.App(Lambda.Id "#x", Lambda.Id "#x")
+					))
+				)
+			)
+
 		let rec encode : M.mexp -> Lambda.lexp =
 			fun pgm ->
 				match pgm with 
@@ -86,7 +98,9 @@ module Encoder =
 				| Var str -> Lambda.Id str
 				| Fn (x, e) -> Lambda.Lam (x, encode e)
 				| App (e1, e2) -> Lambda.App (encode e1, encode e2)
-				| Rec (f, x, e) -> raise (Error "not implemented")
+				| Rec (f, x, e) -> 
+						let made_fun = Lambda.Lam(f, Lambda.Lam(x, encode e)) in
+						Lambda.App(y_fun, made_fun)
 				| Ifz (e1, e2, e3) -> 						
 						Lambda.App(Lambda.App(Lambda.App(is_zero, encode e1),encode e2),encode e3)
 				| Pair (e1, e2) -> 
