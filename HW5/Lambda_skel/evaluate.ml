@@ -8,6 +8,26 @@ module Evaluator =
   struct
 	exception Error of string
 
+	type texp = Id of string
+	| Lam of string * texp
+	| App of texp * texp
+	| CId of string
+
+	let rec printp exp= 
+		match exp with
+		| Id(s) -> print_string("("^s^")")
+		| CId(s) -> print_string("("^s^")")
+		| Lam(s,a) -> print_string("/"^s^".(");(printp a);print_string(")")
+		| App(a,b) -> print_string("(");(printp a);print_string(") (");(printp b);print_string(")")
+
+	let rec ttol : texp -> Lambda.lexp =
+		fun texp ->
+			match texp with
+			| Id str -> Lambda.Id str
+			| Lam (str, inner_texp) -> Lambda.Lam (str, ttol inner_texp)
+			| App (texp1, texp2) -> Lambda.App (ttol texp1, ttol texp2)
+			| CId str -> Lambda.Id str
+
 	let rec find_substitution : (string * string) list -> string -> string =
 		fun sub_list str ->
 			snd (List.find (fun oldXnew -> (fst oldXnew) = str) sub_list)
@@ -15,6 +35,11 @@ module Evaluator =
 	let count = ref 0
 	let incr_count n = count := !count + n
 	let decr_count n = count := !count - n
+
+	let make_new_name : string -> string =
+		fun str ->
+			incr_count 1;
+			str^(string_of_int (!count))
 
 	let rec inner_renaming : Lambda.lexp -> string -> string -> Lambda.lexp =
 		fun lexp old_str new_str ->
@@ -37,8 +62,7 @@ module Evaluator =
 			match lexp with
 			| Lambda.Lam (str, inner_lexp) ->
 				let rare_renamed_lexp = renaming_bound_variables inner_lexp in
-				let new_str = str^(string_of_int (!count)) in
-				incr_count 1;
+				let new_str = make_new_name str in
 				let renamed_lexp = inner_renaming rare_renamed_lexp str new_str in
 				Lambda.Lam (new_str, renamed_lexp)
 			| Lambda.App (lexp1, lexp2) ->
@@ -47,56 +71,67 @@ module Evaluator =
 				Lambda.App (renamed_lexp1, renamed_lexp2)
 			| _ -> lexp
 
+	let rec base_ltot : Lambda.lexp -> texp =
+		fun lexp ->
+			match lexp with
+			| Lambda.Id str -> Id str
+			| Lambda.Lam (str, inner_lexp) -> Lam (str, base_ltot inner_lexp)
+			| Lambda.App (lexp1, lexp2) ->
+				App(base_ltot lexp1, base_ltot lexp2)
+
+	let rec ltot : Lambda.lexp -> (Lambda.lexp -> texp) -> texp =
+		fun lexp sub ->
+			match lexp with
+			| Lambda.Id str -> sub lexp
+			| Lambda.Lam (str, inner_lexp) ->
+				let sub_fun = (fun x -> if x = Lambda.Id str then CId str else sub x) in
+				let inner_substituted = ltot inner_lexp sub_fun in
+				Lam(str, inner_substituted)
+			| Lambda.App (lexp1, lexp2) ->
+				let inner_substituted1 = ltot lexp1 sub in
+				let inner_substituted2 = ltot lexp2 sub in
+				App(inner_substituted1, inner_substituted2)
 
 	(* this function implements [N/x] M *)
-	let rec substitute : string -> Lambda.lexp -> Lambda.lexp -> Lambda.lexp =
-		fun prev after lexp ->
-			match lexp with
-			| Lambda.Id str ->
-				if str = prev then after
-				else lexp
-			| Lambda.Lam (str, inner_lexp) ->
-				if str = prev 
-				then 
-					(* raise Error("cannot be happen") *)
-					let renamed = renaming_bound_variables lexp in
-					substitute prev after renamed
-				else
-					let inner_substituted = substitute prev after inner_lexp in
-					Lambda.Lam (str, inner_substituted)
-			| Lambda.App (lexp1, lexp2) ->
-				let inner_substituted1 = substitute prev after lexp1 in
-				let inner_substituted2 = substitute prev after lexp2 in
-				Lambda.App (inner_substituted1, inner_substituted2)
+	let rec substitute : texp -> (texp -> texp) -> texp =
+		fun texp sub ->
+			match texp with 
+			| Lam (str, inner_texp) ->
+				let inner_sub = (fun y -> if y = (CId str) then y else sub y) in
+				let inner_substituted = substitute inner_texp inner_sub in
+				Lam (str, inner_substituted)
+			| App (texp1, texp2) ->
+				let inner_substituted1 = substitute texp1 sub in
+				let inner_substituted2 = substitute texp2 sub in
+				App (inner_substituted1, inner_substituted2)
+			| _ -> sub texp
 
-	let rec beta_reduction : Lambda.lexp -> Lambda.lexp =
-		fun lexp ->
-			match lexp with
-			| Lambda.App(Lambda.Lam(x, m), n) -> substitute x n m
-			| Lambda.Lam(x, m) ->
+	let rec beta_reduction : texp -> texp =
+		fun texp ->
+			match texp with
+			| App(Lam(x, m), n) -> 
+				let sub = (fun y -> if y = (CId x) then n else y) in
+				substitute m sub
+			| Lam(x, m) ->
 				let beta_m = beta_reduction m in
-				Lambda.Lam(x, beta_m)
-			| Lambda.App(lexp1, lexp2) ->
-				let beta_lexp1 = beta_reduction lexp1 in
-				let beta_lexp2 = beta_reduction lexp2 in
-				Lambda.App(beta_lexp1, beta_lexp2)
-			| _ -> lexp
+				Lam(x, beta_m)
+			| App(texp1, texp2) ->
+				let beta_texp1 = beta_reduction texp1 in
+				let beta_texp2 = beta_reduction texp2 in
+				App(beta_texp1, beta_texp2)
+			| _ -> texp
 
-	let rec inner_reduce : Lambda.lexp -> Lambda.lexp =
-		fun lexp ->
-			let reduced_lexp = beta_reduction lexp in
-			if lexp = reduced_lexp then lexp
-			else 
-				try
-					inner_reduce reduced_lexp
-				with (Error "cannot be happen") ->
-					let renamed = renaming_bound_variables reduced_lexp in
-					inner_reduce renamed
+	let rec inner_reduce : texp -> texp =
+		fun texp ->
+			let reduced_texp = beta_reduction texp in
+			if texp = reduced_texp then texp
+			else inner_reduce reduced_texp 
 			
 
 	let rec reduce : Lambda.lexp -> Lambda.lexp = 
 		fun exp -> 
-			let preprocessed = renaming_bound_variables exp in
-			inner_reduce preprocessed 
+			let preprocessed_lexp = renaming_bound_variables exp in
+			let preprocessed_texp = ltot preprocessed_lexp base_ltot in
+			(ttol (inner_reduce preprocessed_texp))
 
   end

@@ -1,0 +1,965 @@
+App (
+  App (
+    Lam (x,
+      App (
+        Lam (f,
+          Lam (x,
+            App (
+              App (
+                App (
+                  Lam (a,
+                    App (
+                      App (
+                        Id a, 
+                        Lam (x,
+                          Lam (x,
+                            Lam (y,
+                              Id y
+                            )
+                          )
+                        )
+                      ), 
+                      Lam (x,
+                        Lam (y,
+                          Id x
+                        )
+                      )
+                    )
+                  ), 
+                  Id x
+                ), 
+                Lam (n,
+                  Lam (z,
+                    Id z
+                  )
+                )
+              ), 
+              App (
+                App (
+                  App (
+                    Lam (a,
+                      App (
+                        App (
+                          Id a, 
+                          Lam (x,
+                            Lam (x,
+                              Lam (y,
+                                Id y
+                              )
+                            )
+                          )
+                        ), 
+                        Lam (x,
+                          Lam (y,
+                            Id x
+                          )
+                        )
+                      )
+                    ), 
+                    App (
+                      App (
+                        Lam (n,
+                          Lam (z,
+                            App (
+                              Id n, 
+                              Id z
+                            )
+                          )
+                        ), 
+                        Lam (n,
+                          App (
+                            Lam (p,
+                              App (
+                                Id p, 
+                                Lam (x,
+                                  Lam (y,
+                                    Id y
+                                  )
+                                )
+                              )
+                            ), 
+                            App (
+                              App (
+                                Id n, 
+                                Lam (p,
+                                  App (
+                                    App (
+                                      Lam (v,
+                                        Lam (s,
+                                          Lam (k,
+                                            App (
+                                              App (
+                                                Id k, 
+                                                Id v
+                                              ), 
+                                              Id s
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      App (
+                                        Lam (i,
+                                          Lam (n,
+                                            Lam (z,
+                                              App (
+                                                App (
+                                                  Id i, 
+                                                  Id n
+                                                ), 
+                                                App (
+                                                  Id n, 
+                                                  Id z
+                                                )
+                                              )
+                                            )
+                                          )
+                                        ), 
+                                        App (
+                                          Lam (p,
+                                            App (
+                                              Id p, 
+                                              Lam (x,
+                                                Lam (y,
+                                                  Id x
+                                                )
+                                              )
+                                            )
+                                          ), 
+                                          Id p
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      Lam (p,
+                                        App (
+                                          Id p, 
+                                          Lam (x,
+                                            Lam (y,
+                                              Id x
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      Id p
+                                    )
+                                  )
+                                )
+                              ), 
+                              App (
+                                App (
+                                  Lam (v,
+                                    Lam (s,
+                                      Lam (k,
+                                        App (
+                                          App (
+                                            Id k, 
+                                            Id v
+                                          ), 
+                                          Id s
+                                        )
+                                      )
+                                    )
+                                  ), 
+                                  Lam (n,
+                                    Lam (z,
+                                      Id z
+                                    )
+                                  )
+                                ), 
+                                Lam (n,
+                                  Lam (z,
+                                    Id z
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      ), 
+                      Id x
+                    )
+                  ), 
+                  Lam (n,
+                    Lam (z,
+                      App (
+                        Id n, 
+                        Id z
+                      )
+                    )
+                  )
+                ), 
+                Lam (n,
+                  Lam (z,
+                    App (
+                      App (
+                        App (
+                          Id f, 
+                          App (
+                            App (
+                              Lam (n,
+                                Lam (z,
+                                  App (
+                                    Id n, 
+                                    Id z
+                                  )
+                                )
+                              ), 
+                              Lam (n,
+                                App (
+                                  Lam (p,
+                                    App (
+                                      Id p, 
+                                      Lam (x,
+                                        Lam (y,
+                                          Id y
+                                        )
+                                      )
+                                    )
+                                  ), 
+                                  App (
+                                    App (
+                                      Id n, 
+                                      Lam (p,
+                                        App (
+                                          App (
+                                            Lam (v,
+                                              Lam (s,
+                                                Lam (k,
+                                                  App (
+                                                    App (
+                                                      Id k, 
+                                                      Id v
+                                                    ), 
+                                                    Id s
+                                                  )
+                                                )
+                                              )
+                                            ), 
+                                            App (
+                                              Lam (i,
+                                                Lam (n,
+                                                  Lam (z,
+                                                    App (
+                                                      App (
+                                                        Id i, 
+                                                        Id n
+                                                      ), 
+                                                      App (
+                                                        Id n, 
+                                                        Id z
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              App (
+                                                Lam (p,
+                                                  App (
+                                                    Id p, 
+                                                    Lam (x,
+                                                      Lam (y,
+                                                        Id x
+                                                      )
+                                                    )
+                                                  )
+                                                ), 
+                                                Id p
+                                              )
+                                            )
+                                          ), 
+                                          App (
+                                            Lam (p,
+                                              App (
+                                                Id p, 
+                                                Lam (x,
+                                                  Lam (y,
+                                                    Id x
+                                                  )
+                                                )
+                                              )
+                                            ), 
+                                            Id p
+                                          )
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      App (
+                                        Lam (v,
+                                          Lam (s,
+                                            Lam (k,
+                                              App (
+                                                App (
+                                                  Id k, 
+                                                  Id v
+                                                ), 
+                                                Id s
+                                              )
+                                            )
+                                          )
+                                        ), 
+                                        Lam (n,
+                                          Lam (z,
+                                            Id z
+                                          )
+                                        )
+                                      ), 
+                                      Lam (n,
+                                        Lam (z,
+                                          Id z
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            ), 
+                            Id x
+                          )
+                        ), 
+                        Id n
+                      ), 
+                      App (
+                        App (
+                          App (
+                            Id f, 
+                            App (
+                              App (
+                                Lam (n,
+                                  Lam (z,
+                                    App (
+                                      Id n, 
+                                      App (
+                                        Id n, 
+                                        Id z
+                                      )
+                                    )
+                                  )
+                                ), 
+                                Lam (n,
+                                  App (
+                                    Lam (p,
+                                      App (
+                                        Id p, 
+                                        Lam (x,
+                                          Lam (y,
+                                            Id y
+                                          )
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      App (
+                                        Id n, 
+                                        Lam (p,
+                                          App (
+                                            App (
+                                              Lam (v,
+                                                Lam (s,
+                                                  Lam (k,
+                                                    App (
+                                                      App (
+                                                        Id k, 
+                                                        Id v
+                                                      ), 
+                                                      Id s
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              App (
+                                                Lam (i,
+                                                  Lam (n,
+                                                    Lam (z,
+                                                      App (
+                                                        App (
+                                                          Id i, 
+                                                          Id n
+                                                        ), 
+                                                        App (
+                                                          Id n, 
+                                                          Id z
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                ), 
+                                                App (
+                                                  Lam (p,
+                                                    App (
+                                                      Id p, 
+                                                      Lam (x,
+                                                        Lam (y,
+                                                          Id x
+                                                        )
+                                                      )
+                                                    )
+                                                  ), 
+                                                  Id p
+                                                )
+                                              )
+                                            ), 
+                                            App (
+                                              Lam (p,
+                                                App (
+                                                  Id p, 
+                                                  Lam (x,
+                                                    Lam (y,
+                                                      Id x
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              Id p
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      App (
+                                        App (
+                                          Lam (v,
+                                            Lam (s,
+                                              Lam (k,
+                                                App (
+                                                  App (
+                                                    Id k, 
+                                                    Id v
+                                                  ), 
+                                                  Id s
+                                                )
+                                              )
+                                            )
+                                          ), 
+                                          Lam (n,
+                                            Lam (z,
+                                              Id z
+                                            )
+                                          )
+                                        ), 
+                                        Lam (n,
+                                          Lam (z,
+                                            Id z
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              ), 
+                              Id x
+                            )
+                          ), 
+                          Id n
+                        ), 
+                        Id z
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ), 
+        App (
+          Id x, 
+          Id x
+        )
+      )
+    ), 
+    Lam (x,
+      App (
+        Lam (f,
+          Lam (x,
+            App (
+              App (
+                App (
+                  Lam (a,
+                    App (
+                      App (
+                        Id a, 
+                        Lam (x,
+                          Lam (x,
+                            Lam (y,
+                              Id y
+                            )
+                          )
+                        )
+                      ), 
+                      Lam (x,
+                        Lam (y,
+                          Id x
+                        )
+                      )
+                    )
+                  ), 
+                  Id x
+                ), 
+                Lam (n,
+                  Lam (z,
+                    Id z
+                  )
+                )
+              ), 
+              App (
+                App (
+                  App (
+                    Lam (a,
+                      App (
+                        App (
+                          Id a, 
+                          Lam (x,
+                            Lam (x,
+                              Lam (y,
+                                Id y
+                              )
+                            )
+                          )
+                        ), 
+                        Lam (x,
+                          Lam (y,
+                            Id x
+                          )
+                        )
+                      )
+                    ), 
+                    App (
+                      App (
+                        Lam (n,
+                          Lam (z,
+                            App (
+                              Id n, 
+                              Id z
+                            )
+                          )
+                        ), 
+                        Lam (n,
+                          App (
+                            Lam (p,
+                              App (
+                                Id p, 
+                                Lam (x,
+                                  Lam (y,
+                                    Id y
+                                  )
+                                )
+                              )
+                            ), 
+                            App (
+                              App (
+                                Id n, 
+                                Lam (p,
+                                  App (
+                                    App (
+                                      Lam (v,
+                                        Lam (s,
+                                          Lam (k,
+                                            App (
+                                              App (
+                                                Id k, 
+                                                Id v
+                                              ), 
+                                              Id s
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      App (
+                                        Lam (i,
+                                          Lam (n,
+                                            Lam (z,
+                                              App (
+                                                App (
+                                                  Id i, 
+                                                  Id n
+                                                ), 
+                                                App (
+                                                  Id n, 
+                                                  Id z
+                                                )
+                                              )
+                                            )
+                                          )
+                                        ), 
+                                        App (
+                                          Lam (p,
+                                            App (
+                                              Id p, 
+                                              Lam (x,
+                                                Lam (y,
+                                                  Id x
+                                                )
+                                              )
+                                            )
+                                          ), 
+                                          Id p
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      Lam (p,
+                                        App (
+                                          Id p, 
+                                          Lam (x,
+                                            Lam (y,
+                                              Id x
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      Id p
+                                    )
+                                  )
+                                )
+                              ), 
+                              App (
+                                App (
+                                  Lam (v,
+                                    Lam (s,
+                                      Lam (k,
+                                        App (
+                                          App (
+                                            Id k, 
+                                            Id v
+                                          ), 
+                                          Id s
+                                        )
+                                      )
+                                    )
+                                  ), 
+                                  Lam (n,
+                                    Lam (z,
+                                      Id z
+                                    )
+                                  )
+                                ), 
+                                Lam (n,
+                                  Lam (z,
+                                    Id z
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      ), 
+                      Id x
+                    )
+                  ), 
+                  Lam (n,
+                    Lam (z,
+                      App (
+                        Id n, 
+                        Id z
+                      )
+                    )
+                  )
+                ), 
+                Lam (n,
+                  Lam (z,
+                    App (
+                      App (
+                        App (
+                          Id f, 
+                          App (
+                            App (
+                              Lam (n,
+                                Lam (z,
+                                  App (
+                                    Id n, 
+                                    Id z
+                                  )
+                                )
+                              ), 
+                              Lam (n,
+                                App (
+                                  Lam (p,
+                                    App (
+                                      Id p, 
+                                      Lam (x,
+                                        Lam (y,
+                                          Id y
+                                        )
+                                      )
+                                    )
+                                  ), 
+                                  App (
+                                    App (
+                                      Id n, 
+                                      Lam (p,
+                                        App (
+                                          App (
+                                            Lam (v,
+                                              Lam (s,
+                                                Lam (k,
+                                                  App (
+                                                    App (
+                                                      Id k, 
+                                                      Id v
+                                                    ), 
+                                                    Id s
+                                                  )
+                                                )
+                                              )
+                                            ), 
+                                            App (
+                                              Lam (i,
+                                                Lam (n,
+                                                  Lam (z,
+                                                    App (
+                                                      App (
+                                                        Id i, 
+                                                        Id n
+                                                      ), 
+                                                      App (
+                                                        Id n, 
+                                                        Id z
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              App (
+                                                Lam (p,
+                                                  App (
+                                                    Id p, 
+                                                    Lam (x,
+                                                      Lam (y,
+                                                        Id x
+                                                      )
+                                                    )
+                                                  )
+                                                ), 
+                                                Id p
+                                              )
+                                            )
+                                          ), 
+                                          App (
+                                            Lam (p,
+                                              App (
+                                                Id p, 
+                                                Lam (x,
+                                                  Lam (y,
+                                                    Id x
+                                                  )
+                                                )
+                                              )
+                                            ), 
+                                            Id p
+                                          )
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      App (
+                                        Lam (v,
+                                          Lam (s,
+                                            Lam (k,
+                                              App (
+                                                App (
+                                                  Id k, 
+                                                  Id v
+                                                ), 
+                                                Id s
+                                              )
+                                            )
+                                          )
+                                        ), 
+                                        Lam (n,
+                                          Lam (z,
+                                            Id z
+                                          )
+                                        )
+                                      ), 
+                                      Lam (n,
+                                        Lam (z,
+                                          Id z
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            ), 
+                            Id x
+                          )
+                        ), 
+                        Id n
+                      ), 
+                      App (
+                        App (
+                          App (
+                            Id f, 
+                            App (
+                              App (
+                                Lam (n,
+                                  Lam (z,
+                                    App (
+                                      Id n, 
+                                      App (
+                                        Id n, 
+                                        Id z
+                                      )
+                                    )
+                                  )
+                                ), 
+                                Lam (n,
+                                  App (
+                                    Lam (p,
+                                      App (
+                                        Id p, 
+                                        Lam (x,
+                                          Lam (y,
+                                            Id y
+                                          )
+                                        )
+                                      )
+                                    ), 
+                                    App (
+                                      App (
+                                        Id n, 
+                                        Lam (p,
+                                          App (
+                                            App (
+                                              Lam (v,
+                                                Lam (s,
+                                                  Lam (k,
+                                                    App (
+                                                      App (
+                                                        Id k, 
+                                                        Id v
+                                                      ), 
+                                                      Id s
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              App (
+                                                Lam (i,
+                                                  Lam (n,
+                                                    Lam (z,
+                                                      App (
+                                                        App (
+                                                          Id i, 
+                                                          Id n
+                                                        ), 
+                                                        App (
+                                                          Id n, 
+                                                          Id z
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                ), 
+                                                App (
+                                                  Lam (p,
+                                                    App (
+                                                      Id p, 
+                                                      Lam (x,
+                                                        Lam (y,
+                                                          Id x
+                                                        )
+                                                      )
+                                                    )
+                                                  ), 
+                                                  Id p
+                                                )
+                                              )
+                                            ), 
+                                            App (
+                                              Lam (p,
+                                                App (
+                                                  Id p, 
+                                                  Lam (x,
+                                                    Lam (y,
+                                                      Id x
+                                                    )
+                                                  )
+                                                )
+                                              ), 
+                                              Id p
+                                            )
+                                          )
+                                        )
+                                      ), 
+                                      App (
+                                        App (
+                                          Lam (v,
+                                            Lam (s,
+                                              Lam (k,
+                                                App (
+                                                  App (
+                                                    Id k, 
+                                                    Id v
+                                                  ), 
+                                                  Id s
+                                                )
+                                              )
+                                            )
+                                          ), 
+                                          Lam (n,
+                                            Lam (z,
+                                              Id z
+                                            )
+                                          )
+                                        ), 
+                                        Lam (n,
+                                          Lam (z,
+                                            Id z
+                                          )
+                                        )
+                                      )
+                                    )
+                                  )
+                                )
+                              ), 
+                              Id x
+                            )
+                          ), 
+                          Id n
+                        ), 
+                        Id z
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ), 
+        App (
+          Id x, 
+          Id x
+        )
+      )
+    )
+  ), 
+  Lam (n,
+    Lam (z,
+      App (
+        Id n, 
+        App (
+          Id n, 
+          App (
+            Id n, 
+            App (
+              Id n, 
+              App (
+                Id n, 
+                App (
+                  Id n, 
+                  App (
+                    Id n, 
+                    App (
+                      Id n, 
+                      Id z
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+)
