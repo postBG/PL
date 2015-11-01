@@ -83,31 +83,11 @@ module Encoder =
 	  	)
 
 	  let rec is_zero = 
-	  	Lambda.Lam 
-	  	(
-	  		"#n", 
-	  		Lambda.Lam
-	  		(
-	  			"#x", 
-	  			Lambda.Lam
-	  			(
-	  				"#y", 
-	  				Lambda.App
-	  				(
-	  					Lambda.Id "#n",
-	  					Lambda.App
-	  					(
-	  						Lambda.Lam
-	  						(
-	  							"#x",
-	  							Lambda.Id "#y"
-	  						),
-	  						Lambda.Id "#x"
-	  					)
-	  				)
-	  			)
-	  		)
-	  	)
+	  	Lambda.Lam("#n", Lambda.Lam("#x", Lambda.Lam("#y", 
+	  				Lambda.App(Lambda.App(Lambda.Id "#n",
+	  					Lambda.Lam("#x", Lambda.Id "#y")),
+	  					Lambda.Id "#x"
+	  				))))
 
 	  let rec succ =
 	  	Lambda.Lam
@@ -142,6 +122,21 @@ module Encoder =
 					Lambda.App(Lambda.App(Lambda.Id "#n'",Lambda.Id "#f"),
 						Lambda.Id "#x"))))))
 	
+		let rec church_pair =
+			Lambda.Lam("#x", Lambda.Lam("#y", Lambda.Lam("#z", 
+				Lambda.App(Lambda.App(Lambda.Id "#z", Lambda.Id "#x"), 
+					Lambda.Id "#y")
+			)))
+
+		let rec church_fst = 
+			Lambda.Lam("#p", Lambda.App(Lambda.Id "#p", 
+				Lambda.Lam("#x", Lambda.Lam("#y", Lambda.Id "#x"))
+			))
+
+		let rec church_snd =
+			Lambda.Lam("#p", Lambda.App(Lambda.Id "#p",
+				Lambda.Lam("#x", Lambda.Lam("#y", Lambda.Id "#y"))
+			))
 
 		let rec encode : M.mexp -> Lambda.lexp =
 			fun pgm ->
@@ -153,9 +148,12 @@ module Encoder =
 				| Rec (f, x, e) -> raise (Error "not implemented")
 				| Ifz (e1, e2, e3) -> 						
 						Lambda.App(Lambda.App(Lambda.App(is_zero, encode e1),encode e2),encode e3)
-				| Pair (e1, e2) -> raise (Error "not implemented") 
-				| Fst e -> raise (Error "not implemented") 
-				| Snd e -> raise (Error "not implemented") 
+				| Pair (e1, e2) -> 
+						let encoded_e1 = encode e1 in
+						let encoded_e2 = encode e2 in
+						Lambda.App(Lambda.App(church_pair, encoded_e1), encoded_e2)
+				| Fst e -> Lambda.App(church_fst, encode e) 
+				| Snd e -> Lambda.App(church_snd, encode e) 
 				| Add (e1, e2) -> 
 						let encoded_e1 = encode e1 in
 						let encoded_e2 = encode e2 in
