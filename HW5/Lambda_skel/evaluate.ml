@@ -13,13 +13,6 @@ module Evaluator =
 	| App of texp * texp
 	| CId of string
 
-	let rec printp exp= 
-		match exp with
-		| Id(s) -> print_string("("^s^")")
-		| CId(s) -> print_string("("^s^")")
-		| Lam(s,a) -> print_string("/"^s^".(");(printp a);print_string(")")
-		| App(a,b) -> print_string("(");(printp a);print_string(") (");(printp b);print_string(")")
-
 	let rec ttol : texp -> Lambda.lexp =
 		fun texp ->
 			match texp with
@@ -27,10 +20,6 @@ module Evaluator =
 			| Lam (str, inner_texp) -> Lambda.Lam (str, ttol inner_texp)
 			| App (texp1, texp2) -> Lambda.App (ttol texp1, ttol texp2)
 			| CId str -> Lambda.Id str
-
-	let rec find_substitution : (string * string) list -> string -> string =
-		fun sub_list str ->
-			snd (List.find (fun oldXnew -> (fst oldXnew) = str) sub_list)
 
 	let count = ref 0
 	let incr_count n = count := !count + n
@@ -115,10 +104,16 @@ module Evaluator =
 			| Lam(x, m) ->
 				let beta_m = beta_reduction m in
 				Lam(x, beta_m)
+			| App(App(texp1, texp2), texp3) ->
+				let tmp_texp = App(texp1, texp2) in
+				let reduced_texp = beta_reduction (tmp_texp) in
+				if reduced_texp = tmp_texp 
+				then App(reduced_texp, beta_reduction texp3) 
+				else App(reduced_texp, texp3)
 			| App(texp1, texp2) ->
-				let beta_texp1 = beta_reduction texp1 in
+				(*let beta_texp1 = beta_reduction texp1 in*)
 				let beta_texp2 = beta_reduction texp2 in
-				App(beta_texp1, beta_texp2)
+				App(texp1, beta_texp2)
 			| _ -> texp
 
 	let rec inner_reduce : texp -> texp =
