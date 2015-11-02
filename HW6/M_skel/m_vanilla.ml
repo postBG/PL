@@ -82,7 +82,11 @@ module M_Vanilla : M_Runner = struct
         | LET (REC (f, e1), e2) -> (* TODO: implementation *)
             let (v1, m') = eval env mem e1 in(* v1 = <\x.e, sig'> *)
             let (c, env') = getClosure v1 in(* c = \x.e *)
-            let new_env = env' @+ (f, v1) in
+            let v = (fun c -> 
+                    match c with
+                    | Fun (id, exp) -> RecFun(f, id, exp)
+                    | RecFun (fun_id, arg_id, exp) -> c) c in
+            let new_env = env' @+ (f, Closure (v, env')) in
                 (eval new_env m' e2)
         | IF (e1, e2, e3) ->
             let (v1, m') = eval env mem e1 in
