@@ -62,7 +62,7 @@ module M_SimChecker : M_SimTypeChecker = struct
 				| V in_id -> if id = in_id then sub_type else x
 			) 
 
-	let rec relay_sub : substitution -> substitution =
+	let rec relay_sub : substitution -> substitution -> substitution =
 		fun s' s -> (fun x -> s' (s x))
 
 	let rec unify : mtype * mtype -> substitution =
