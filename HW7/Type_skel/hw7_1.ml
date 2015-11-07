@@ -69,6 +69,9 @@ module M_SimChecker : M_SimTypeChecker = struct
 		fun tXt' ->
 			let (t, t') = tXt' in
 			match (t, t') with
+			| (Int, Int) -> base_substitution
+			| (Bool, Bool) -> base_substitution
+			| (String, String) -> base_substitution
 			| (V id, tau) -> 
 					if (occur id tau) then raise (TypeError "fail")
 					else alpha_substitution id tau
@@ -81,9 +84,8 @@ module M_SimChecker : M_SimTypeChecker = struct
 					let s = unify(tau1, tau1') in
 					let s' = unify(s tau2, s tau2') in
 					(relay_sub s' s)
-			| _ -> (* primitive type *)
-				if t = t' then base_substitution
-				else raise (TypeError "fail")
+			| _ -> raise (TypeError "fail")
+				
 
 	let rec check exp = raise (TypeError "no checker") (* TODO: implementation *)
 end
