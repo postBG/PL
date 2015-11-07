@@ -67,7 +67,7 @@ module M_SimChecker : M_SimTypeChecker = struct
 
 	let rec unify : mtype * mtype -> substitution =
 		fun tXt' ->
-			let (t, t') = txt' in
+			let (t, t') = tXt' in
 			match (t, t') with
 			| (V id, tau) -> 
 					if (occur id tau) then raise (TypeError "fail")
@@ -76,7 +76,11 @@ module M_SimChecker : M_SimTypeChecker = struct
 			| (Arrow (tau1, tau2), Arrow (tau1', tau2')) ->
 					let s = unify(tau1, tau1') in
 					let s' = unify(s tau2, s tau2') in
-
+					(relay_sub s' s)
+			| (Pair (tau1, tau2), Pair (tau1', tau2')) ->
+					let s = unify(tau1, tau1') in
+					let s' = unify(s tau2, s tau2') in
+					(relay_sub s' s)
 			| _ -> (* primitive type *)
 				if t = t' then base_substitution
 				else raise (TypeError "fail")
