@@ -65,7 +65,7 @@ module M_SimChecker : M_SimTypeChecker = struct
 	let rec relay_sub : substitution -> substitution -> substitution =
 		fun s' s -> (fun x -> s' (s x))
 
-	let rec unify : mtype * mtype -> substitution =
+	let rec unify : (mtype * mtype) -> substitution =
 		fun tXt' ->
 			let (t, t') = tXt' in
 			match (t, t') with
@@ -86,6 +86,10 @@ module M_SimChecker : M_SimTypeChecker = struct
 					(relay_sub s' s)
 			| _ -> raise (TypeError "fail")
 				
+	let rec m_algorithm : (tyenvironment * exp * mtype) -> substitution =
+		fun tyenvXexpXmtype ->
+			let (tyenv, exp, mtype) = tyenvXexpXmtype in
+			raise (TypeError "no checker")			
 
 	let rec check exp = raise (TypeError "no checker") (* TODO: implementation *)
 end
