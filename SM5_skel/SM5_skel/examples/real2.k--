@@ -1,0 +1,9 @@
+let x := 0 in 
+read x;
+if (5 < x) then (
+  if (false = false) then (
+    if not(true = 3) then (write (21)) else (write (22))
+  )
+  else (write (23))
+)
+else (write (24))

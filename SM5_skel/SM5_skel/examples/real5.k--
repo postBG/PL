@@ -1,0 +1,9 @@
+let x := 0 in
+read x;
+let i := 0 in
+let sum := 0 in
+while (i < x) do (
+   sum := sum + i;
+   i := i + 1
+); 
+write(sum)

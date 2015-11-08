@@ -21,15 +21,24 @@ module Translator = struct
 let rec for_to_while : K.id -> K.program -> K.program -> K.program -> K.program =
 	fun id init_stat bound_stat body ->
 		let inner_id = "#inner"^id in
-		K.LETV(id, init_stat,
-			K.LETV(inner_id, init_stat,
-    			K.WHILE(K.LESS(K.VAR(id), K.ADD(bound_stat, K.NUM(1))),
-      				K.SEQ(K.SEQ(K.SEQ(body,
-          					K.ASSIGN(inner_id, K.ADD(K.VAR(inner_id), K.NUM(1)))),
-        				K.ASSIGN(id, K.VAR(inner_id))), K.UNIT)
-   	 			)
-  			)
+		let e1_val = "#e1"^id in
+		let e2_val = "#e2"^id in
+		K.LETV(e1_val, init_stat,
+			K.LETV(e2_val, bound_stat,		
+				K.LETV(inner_id, K.VAR(e1_val),
+					K.WHILE(K.LESS(K.VAR(inner_id), K.ADD(K.VAR(e2_val), K.NUM(1))),
+						K.SEQ(
+							K.ASSIGN(id, K.VAR(inner_id)),
+							K.SEQ(K.SEQ(K.SEQ(body,
+								K.ASSIGN(inner_id, K.ADD(K.VAR(inner_id), K.NUM(1)))),
+							K.ASSIGN(id, K.VAR(inner_id))), K.UNIT)
+						)
+					)
+				)
+			)
 		)
+		
+		
 
 
 (* 1. calculated value will top of the stack *)

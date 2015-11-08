@@ -1,0 +1,8 @@
+let x := 1 in
+let sum := 0 in
+let k := 0 in
+read k;
+for x := 1 to k do (
+  x := 2 * x;
+  sum := sum + x
+); (write sum)
