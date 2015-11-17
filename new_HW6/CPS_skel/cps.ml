@@ -78,7 +78,13 @@ struct
         App (Var k, Pair (Var v1, Var v2))
       )))))
     (* Expressions with three operands *)
-    | Ifz (e1, e2, e3) -> Fn (k, App (cps e1, (* Complete this *) todo))
+    | Ifz (e1, e2, e3) -> 
+      let v1 = gen_var var_list in
+      let v2 = gen_var var_list in
+      let v3 = gen_var var_list in
+      Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
+        App (cps e3, Fn (v3, App (Var k, Ifz (Var v1, Var v2, Var v3))))
+      )))))
     (* Lambda term expressinos *)
     | Fn (x, e) -> 
       let k' = gen_var var_list in
