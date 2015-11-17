@@ -65,7 +65,12 @@ struct
       Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
         App (Var k, Sub (Var v1, Var v2))
       )))))
-    | And (e1, e2) -> failwith "Unimplemented" (* TODO *)
+    | And (e1, e2) -> 
+      let v1 = gen_var var_list in
+      let v2 = gen_var var_list in
+      Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
+        App (Var k, And (Var v1, Var v2))
+      )))))
     | Pair (e1, e2) -> 
       let v1 = gen_var var_list in
       let v2 = gen_var var_list in
