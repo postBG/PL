@@ -1,0 +1,5 @@
+let i := 3 in 
+for i := 2 to 1 do ( 
+i := i - 1 
+); 
+write i 
