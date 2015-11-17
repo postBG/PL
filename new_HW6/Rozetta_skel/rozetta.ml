@@ -11,12 +11,6 @@ module Rozetta = struct
   exception Error of string
 
 	let dummy_arg = (Val (Z 0))
-	(*let counter = ref 0
-	let newsl() = counter := !counter - 1; (!counter, 0)
-
-	let alloc_special_loc() =
-		let s_loc = newsl() in
-		(Val (L s_loc))*)
 
 	let rec trans_value : Sm5.value -> value =
 		fun sm5_value ->
@@ -99,7 +93,6 @@ module Rozetta = struct
   		fun command -> 
   			let end_fun = (Fn ("#prev_arg", [])) in
   			(*let special_loc = alloc_special_loc() in*)
-
   			(PUSH end_fun)::(*remain env intact*)
   					(MALLOC)::(BIND store_prev_fun)::(*"store_prev_fun" => loc => (caller)*)
   						(PUSH (Id store_prev_fun))::(STORE)::(inner_trans command 1)
