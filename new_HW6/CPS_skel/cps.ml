@@ -46,8 +46,12 @@ struct
     | Num n -> Fn (k, App (Var k, Num n))
     | Var x -> Fn (k, App (Var k, Var x))
     (* Expressions with one operand *)
-    | Fst e -> Fn (k, App (cps e, (* Complete this *) todo))
-    | Snd e -> Fn (k, App (cps e, (* Complete this *) todo))
+    | Fst e -> 
+      let v  = gen_var var_list in
+      Fn (k, App (cps e, (Fn (v, App (Var k, Fst (Var v))))))
+    | Snd e -> 
+      let v  = gen_var var_list in
+      Fn (k, App (cps e, (Fn (v, App (Var k, Snd (Var v))))))
     (* Expressions with two operands *)
     | Add (e1, e2) ->
       let v1 = gen_var var_list in
@@ -55,15 +59,30 @@ struct
       Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
         App (Var k, Add (Var v1, Var v2))
       )))))
-    | Sub (e1, e2) -> failwith "Unimplemented" (* TODO *)
+    | Sub (e1, e2) -> 
+      let v1 = gen_var var_list in
+      let v2 = gen_var var_list in
+      Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
+        App (Var k, Sub (Var v1, Var v2))
+      )))))
     | And (e1, e2) -> failwith "Unimplemented" (* TODO *)
-    | Pair (e1, e2) -> failwith "Unimplemented" (* TODO *)
+    | Pair (e1, e2) -> 
+      let v1 = gen_var var_list in
+      let v2 = gen_var var_list in
+      Fn (k, App (cps e1, Fn (v1, App (cps e2, Fn (v2, 
+        App (Var k, Pair (Var v1, Var v2))
+      )))))
     (* Expressions with three operands *)
     | Ifz (e1, e2, e3) -> Fn (k, App (cps e1, (* Complete this *) todo))
     (* Lambda term expressinos *)
-    | Fn (x, e) -> Fn (k, App (Var k, (* Complete this *) todo))
+    | Fn (x, e) -> 
+      let k' = gen_var var_list in
+      Fn (k, App (Var k, Fn (x, Fn (k', App (cps e, Var k')))))
     | Rec (f, x, e) -> Fn (k, App (Var k, (* Complete this *) todo))
     (* Function application *)
-    | App (e1, e2) -> Fn (k, App (cps e1, (* Complete this *) todo))
+    | App (e1, e2) -> 
+      let v = gen_var var_list in
+      let f = gen_var var_list in
+      Fn (k, App (cps e1, Fn (f, App (cps e2, Fn (v, App(App(Var f, Var v), Var k))))))
 
 end
