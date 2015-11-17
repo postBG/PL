@@ -11,9 +11,12 @@ open Rozetta
 
 let read_all filename = 
   let chan = open_in filename in 
-  let res = really_input_string chan (in_channel_length chan) in
+  let len = in_channel_length chan in 
+  let buf = String.create len in 
+  let _ = really_input chan buf 0 len in 
   let _ = close_in chan in 
-  res
+  buf 
+
 
 let main () =
   let psonata = ref false in

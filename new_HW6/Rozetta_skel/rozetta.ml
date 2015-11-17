@@ -27,8 +27,8 @@ module Rozetta = struct
 			| _ -> raise (Error "invisible variable")
 			
 	let prev = "#prev" 
-	let temp_box = "#tempbox"
-	let box = "#box"
+	let tmp_store_prev_fun = "#tempbox"
+	let store_prev_fun = "#box"
 
 	(* when mode 1 -> need not return, mode 2 -> return *)
 	(* key invariant: #prev -> loc (-1, -1) -> (#prev_arg, removed C, E) *)
@@ -63,8 +63,8 @@ module Rozetta = struct
 					set_up_rec_cmds@[(CALL)]
 			| [] -> 
 					if (mode = 1) then
-						(PUSH (Id box))::(LOAD)::
-							(UNBOX prev)::(PUSH dummy_arg)::MALLOC::
+						(PUSH (Id store_prev_fun))::(LOAD)::
+							(PUSH dummy_arg)::MALLOC::
 								(CALL)::[]
 					else []
 	and trans_obj : Sm5.obj -> obj =
@@ -78,18 +78,16 @@ module Rozetta = struct
 			let store_prev_condition_cmds = store_prev_condition sm5_cmds in
 			let store_prev_condition_func = Fn("#prev_arg", store_prev_condition_cmds) in
 
-			(PUSH (Id box))::(LOAD)::	
-				(MALLOC)::(BIND temp_box)::
-					(PUSH (Id temp_box))::(STORE)::
-						(PUSH store_prev_condition_func)::(BIND prev)::
-							(UNBIND)::(* maintain env intact*)
-								(BOX 1)::
-									(PUSH (Id box))::(STORE)::[]
+			(PUSH (Id store_prev_fun))::(LOAD)::(*<x, C', E>::S*)	
+				(MALLOC)::(BIND tmp_store_prev_fun)::
+					(PUSH (Id tmp_store_prev_fun))::(STORE)::(*"tmp" => loc => <x, C', E>*)
+						(PUSH store_prev_condition_func)::
+							(PUSH (Id store_prev_fun))::(STORE)::[]
 	and store_prev_condition : Sm5.command -> command =
 		fun sm5_cmds ->
 			let stored_cmds = (inner_trans sm5_cmds 1) in 
-			(PUSH (Id temp_box))::(LOAD)::
-				(PUSH (Id box))::(STORE)::(* recover box first *)
+			(PUSH (Id tmp_store_prev_fun))::(LOAD)::
+				(PUSH (Id store_prev_fun))::(STORE)::(* recover box first *)
 					(UNBIND)::(POP)::
 						stored_cmds
 	
@@ -102,9 +100,8 @@ module Rozetta = struct
   			let end_fun = (Fn ("#prev_arg", [])) in
   			(*let special_loc = alloc_special_loc() in*)
 
-  			(PUSH end_fun)::(BIND prev)::(* ("prev", caller) *)
-  				(UNBIND)::(BOX 1)::(* [("prev", caller)]::S *)
-  					(MALLOC)::(BIND box)::
-  						(PUSH (Id box))::(STORE)::(inner_trans command 1)
+  			(PUSH end_fun)::(*remain env intact*)
+  					(MALLOC)::(BIND store_prev_fun)::(*"store_prev_fun" => loc => (caller)*)
+  						(PUSH (Id store_prev_fun))::(STORE)::(inner_trans command 1)
 
 end
