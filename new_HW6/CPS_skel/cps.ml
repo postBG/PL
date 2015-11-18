@@ -37,6 +37,26 @@ struct
   (* Dummy variable to mark what you have to do *)
   let todo = Num 0 
 
+  let rec y_combinator var_list =
+    let f = gen_var var_list in
+    let x = gen_var var_list in
+    Fn (f, 
+      App (
+        Fn (x, 
+          App (
+            Var f,
+            App (Var x, Var x)
+          )),
+          Fn (x, 
+            App (
+              Var f, 
+              App (Var x, Var x)
+          ))
+      )
+    )
+
+ 
+
   (* TODO : Fill in the blank to complete this function *)
   let rec cps exp = 
     let var_list = collect_vars exp in
@@ -89,7 +109,9 @@ struct
     | Fn (x, e) -> 
       let k' = gen_var var_list in
       Fn (k, App (Var k, Fn (x, Fn (k', App (cps e, Var k')))))
-    | Rec (f, x, e) -> Fn (k, App (Var k, (* Complete this *) todo))
+    | Rec (f, x, e) -> 
+      let k' = gen_var var_list in 
+      Fn (k, App (Var k, (* Complete this *) todo))
     (* Function application *)
     | App (e1, e2) -> 
       let v = gen_var var_list in
