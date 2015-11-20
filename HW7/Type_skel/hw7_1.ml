@@ -16,7 +16,7 @@ module M_SimChecker : M_SimTypeChecker = struct
 		| Loc of mtype
 		| Arrow of mtype * mtype
 		| V of id (* unknown type variable *)
-	and id = int
+	and id = string
 	
 	(* folded function *)
 	type tyenvironment = id -> mtype 
@@ -35,6 +35,8 @@ module M_SimChecker : M_SimTypeChecker = struct
 			| V id -> (* x : id *)
 					(fun x -> if x = id then ans_type else env x)
 			| _ -> raise (TypeError "wrong input")
+
+	let rec empty_env = fun _ -> raise (TypeError "empty env")
 
 	let rec base_substitution : mtype -> mtype =
 		fun x -> x
@@ -72,24 +74,33 @@ module M_SimChecker : M_SimTypeChecker = struct
 			| (Int, Int) -> base_substitution
 			| (Bool, Bool) -> base_substitution
 			| (String, String) -> base_substitution
-			| (V id, tau) -> 
-					if (occur id tau) then raise (TypeError "fail")
-					else alpha_substitution id tau
+			| (V id, tau) ->
+				if t = t' then base_substitution
+				else if (occur id tau) then raise (TypeError "fail")
+				else alpha_substitution id tau
 			| (tau, V id) -> unify(t', t)
 			| (Arrow (tau1, tau2), Arrow (tau1', tau2')) ->
-					let s = unify(tau1, tau1') in
-					let s' = unify(s tau2, s tau2') in
-					(relay_sub s' s)
+				let s = unify(tau1, tau1') in
+				let s' = unify(s tau2, s tau2') in
+				(relay_sub s' s)
 			| (Pair (tau1, tau2), Pair (tau1', tau2')) ->
-					let s = unify(tau1, tau1') in
-					let s' = unify(s tau2, s tau2') in
-					(relay_sub s' s)
+				let s = unify(tau1, tau1') in
+				let s' = unify(s tau2, s tau2') in
+				(relay_sub s' s)
 			| _ -> raise (TypeError "fail")
 				
 	let rec m_algorithm : (tyenvironment * exp * mtype) -> substitution =
-		fun tyenvXexpXmtype ->
-			let (tyenv, exp, mtype) = tyenvXexpXmtype in
-			raise (TypeError "no checker")			
+		fun tyenvXexpXtau ->
+			let (tyenv, exp, tau) = tyenvXexpXtau in
+			match exp with
+			| CONST (N num) -> unify (Int, tau)
+			| CONST (B b) -> unify (Bool, tau)
+			| CONST (S str) -> unify (String, tau)
+			| Var x -> 
+				let tau' = tyenv x in
+				unify (tau, tau')
+			| Fn (x, e) ->
+
 
 	let rec check exp = raise (TypeError "no checker") (* TODO: implementation *)
 end
