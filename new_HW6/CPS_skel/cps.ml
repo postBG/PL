@@ -12,6 +12,23 @@ let new_name () =
   let _ = count := !count + 1 in
   "x_" ^ (string_of_int !count)
 
+let y_comb f x =
+  Fn (f, 
+        App(
+          Fn(x,
+            App(
+              Var f,
+              App(Var x, Var x)
+          )),
+          Fn(x,
+            App(
+              Var f,
+              App(Var x, Var x)
+          ))
+        )
+      )
+
+
 let rec alpha_conv exp subs = 
   match exp with
   | Num n -> Num n
@@ -41,15 +58,14 @@ let rec cps' exp =
   | Num n -> Fn (k,  App (Var k, Num n) )
   | Var x -> Fn (k, App (Var k, Var x) )
   | Fn (x, e) -> 
-    let k' = new_name() in
-    Fn (k, App (Var k, Fn (x, Fn (k', App (cps' e, Var k')))))
+    Fn (k, App (Var k, Fn (x, e)))
   | Rec (f, x, e) -> 
-    Fn (k, )
+    Fn (k, App (Var k, Rec (f, x, e)))
   (* Non constant expressions *)
   | App (e1, e2) -> 
     let v = new_name() in
     let f = new_name() in
-    Fn (k, App (cps' e1, Fn (f, App (cps' e2, Fn (v, App(App(Var f, Var v), Var k))))))
+    Fn (k, App (cps' e1, Fn (f, App (cps' e2, Fn (v, App(Var k, App(Var f, Var v)))))))
   | Ifz (e1, e2, e3) -> 
     let v1 = new_name() in
     let v2 = new_name() in
