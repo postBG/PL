@@ -134,8 +134,14 @@ struct
     | SUB -> (fun (v1,v2) -> Int (getInt v1 - getInt v2))
     | AND -> (fun (v1,v2) -> Bool (getBool v1 && getBool v2))
     | OR ->  (fun (v1,v2) -> Bool (getBool v1 || getBool v2))
-    | EQ -> (* TODO : implement this *)
-      failwith "Unimplemented"
+    | EQ -> 
+        (fun (v1, v2) ->
+            match (v1, v2) with
+            | (String str1, String str2) -> Bool (str1 = str2)
+            | (Int n1, Int n2) -> Bool (n1 = n2)
+            | (Bool b1, Bool b2) -> Bool (b1 = b2)
+            | (Loc l1, Loc l2) -> Bool (l1 = l2)
+            | _ -> raise (TypeError "type error"))
 
   let rec printValue =
     function 
@@ -152,13 +158,15 @@ struct
     | VAR x -> (env x, mem)
     | FN (x, e) -> (Closure (Fun (x, e), env), mem)
     | APP (e1, e2) ->
-      let (v2, m') = eval env mem e2 in
-      let (v1, m'') = eval env m' e1 in
+      let (v1, m') = eval env mem e1 in
+      let (v2, m'') = eval env m' e2 in
       let (c, env') = getClosure v1 in
       (match c with 
       | Fun (x, e) -> eval (env' @+ (x, v2)) m'' e
-      | RecFun (f, x, e) ->  (* TODO : implement this *)
-        failwith "Unimplemented")
+      | RecFun (f, x, e) -> (* TODO: implementation *)
+          let new_env = ((env' @+ (x, v2)) @+ (f, v1)) in
+          (eval new_env m'' e)
+      )
     | IF (e1, e2, e3) ->
       let (v1, m') = eval env mem e1 in
       eval env m' (if getBool v1 then e2 else e3)
@@ -183,8 +191,38 @@ struct
     | SND e -> 
       let (v, m') = eval env mem e in
       (snd (getPair v), m')
-    (* TODO : complete the rest of interpreter *)
-    | _ -> failwith "Unimplemented"
+    | LET (VAL (x, e1), e2) ->
+        let (v1, m') = eval env mem e1 in
+        eval (env @+ (x,v1)) m' e2
+    | LET (REC (f, x, body), e2) -> (* TODO: implementation *)
+        let e1 = FN (x, body) in
+        let (v1, m') = eval env mem e1 in(* v1 = <\x.e, sig'> *)
+        let (c, env') = getClosure v1 in(* c = \x.e *)
+        let v = (fun c -> 
+          match c with
+          | Fun (id, exp) -> RecFun(f, id, exp)
+          | RecFun (fun_id, arg_id, exp) -> c) c in
+        let new_env = env' @+ (f, Closure (v, env')) in
+          (eval new_env m' e2)
+    | MALLOC e ->
+        let (v, m') = eval env mem e in
+        let (l, m'') = malloc m' in  
+        (Loc l, store m'' (l,v))
+    | ASSIGN (e1, e2) -> 
+        let (v1, m') = eval env mem e1 in
+        let l = getLoc v1 in(* using get method, it is good for raise exception *)
+        let (v2, m'') = eval env m' e2 in
+        let new_mem = store m'' (l, v2) in
+        (v2, new_mem)
+    | BANG e ->
+        let (v1, m') = eval env mem e in
+        let l = getLoc v1 in
+        (load m' l, m')
+    | SEQ (e1, e2) ->
+        let (v1, m1) = eval env mem e1 in
+        let (v2, m2) = eval env m1 e2 in
+        (v2, m2)
+    
 
   let emptyEnv = (fun x -> raise (RunError ("unbound id: " ^ x)))
 

@@ -29,16 +29,13 @@ module M_SimChecker : M_SimTypeChecker = struct
 	let count = ref 0
 	let rec new_id n = (count := !count + n); !count 
 
-	let rec update_env : tyenvironment -> mtype -> mtype -> tyenvironment =
-		fun env solved_var ans_type ->
-			match solved_var with
-			| V id -> (* x : id *)
-					(fun x -> if x = id then ans_type else env x)
-			| _ -> raise (TypeError "wrong input")
+	let rec update_env : tyenvironment -> id -> mtype -> tyenvironment =
+		fun env id ans_type ->
+			(fun x -> if x = id then ans_type else env x)
 
 	let rec empty_env = fun _ -> raise (TypeError "empty env")
 
-	let rec base_substitution : mtype -> mtype =
+	let rec none : mtype -> mtype =
 		fun x -> x
 
 	let rec occur : id -> mtype -> bool =
@@ -50,17 +47,17 @@ module M_SimChecker : M_SimTypeChecker = struct
 				| V id' -> (id = id')
 				| _ -> false			
 
-	let rec alpha_substitution : id -> mtype -> substitution =
+	let rec new_id_mtype_sub : id -> mtype -> substitution =
 		fun id sub_type ->
-			let alpha_sub = alpha_substitution id sub_type in
+			let new_sub = new_id_mtype_sub id sub_type in
 			(fun x -> 
 				match x with
 				| Int -> x
 				| Bool -> x
 				| String -> x
-				| Pair (t1, t2) -> Pair (alpha_sub t1, alpha_sub t2)
-				| Loc t -> Loc (alpha_sub t)
-				| Arrow (t1, t2) -> Arrow (alpha_sub t1, alpha_sub t2)
+				| Pair (t1, t2) -> Pair (new_sub t1, new_sub t2)
+				| Loc t -> Loc (new_sub t)
+				| Arrow (t1, t2) -> Arrow (new_sub t1, new_sub t2)
 				| V in_id -> if id = in_id then sub_type else x
 			) 
 
@@ -71,13 +68,13 @@ module M_SimChecker : M_SimTypeChecker = struct
 		fun tXt' ->
 			let (t, t') = tXt' in
 			match (t, t') with
-			| (Int, Int) -> base_substitution
-			| (Bool, Bool) -> base_substitution
-			| (String, String) -> base_substitution
+			| (Int, Int) -> none
+			| (Bool, Bool) -> none
+			| (String, String) -> none
 			| (V id, tau) ->
-				if t = t' then base_substitution
+				if t = t' then none
 				else if (occur id tau) then raise (TypeError "fail")
-				else alpha_substitution id tau
+				else new_id_mtype_sub id tau
 			| (tau, V id) -> unify(t', t)
 			| (Arrow (tau1, tau2), Arrow (tau1', tau2')) ->
 				let s = unify(tau1, tau1') in
