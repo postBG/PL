@@ -14,7 +14,8 @@ exception Error of string
       | Sm5.Z n -> Sonata.Z n
       | Sm5.B b -> Sonata.B b
       | Sm5.Unit -> Sonata.Unit
-      | _ -> raise (Error "invisible variable")
+      | Sm5.L _ -> raise (Sonata.Error "Invalid input program : pushing location")
+      | Sm5.R _ -> raise (Sonata.Error "Invalid input program : pushing record")
       
   let prev = "#prev" 
   let tmp_store_prev_fun = "#tempbox"
