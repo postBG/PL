@@ -51,14 +51,18 @@ exception Error of string
       | (Sm5.NOT)::tail -> (Sonata.NOT)::(trans' tail mode)
       | (Sm5.CALL)::tail -> 
           let set_up_rec_cmds = set_up_recursive tail in
-          set_up_rec_cmds@[(Sonata.CALL)]
+          set_up_rec_cmds@[Sonata.CALL]
       | [] -> 
           if (mode = 1) then
-            (Sonata.PUSH (Sonata.Id store_prev_fun))::(Sonata.LOAD)::(* [("prev", prev_loc)]::S *)
-              (Sonata.UNBOX prev)::(* prev_loc::S *)
-                (Sonata.LOAD)::
-                  (Sonata.PUSH dummy_arg)::Sonata.MALLOC::
-                    (Sonata.CALL)::[]
+            [
+              Sonata.PUSH (Sonata.Id store_prev_fun);
+              Sonata.LOAD;(* [("prev", prev_loc)]::S *)
+              Sonata.UNBOX prev;(* prev_loc::S *)
+              Sonata.LOAD;
+              Sonata.PUSH dummy_arg;
+              Sonata.MALLOC;
+              Sonata.CALL
+            ]
           else []
   and trans_obj : Sm5.obj -> Sonata.obj =
     fun sm5_obj ->
@@ -70,21 +74,34 @@ exception Error of string
     fun sm5_cmds -> 
       let store_prev_condition_cmds = store_prev_condition sm5_cmds in
       let store_prev_condition_func = Sonata.Fn("#prev_arg", store_prev_condition_cmds) in
-
-      (Sonata.PUSH (Sonata.Id store_prev_fun))::(Sonata.LOAD)::(*["prev", prev_loc]::S*) 
-        (Sonata.MALLOC)::(Sonata.BIND tmp_store_prev_fun)::
-          (Sonata.PUSH (Sonata.Id tmp_store_prev_fun))::(Sonata.STORE)::(*"tmp" => tmp_loc => ["prev", prev_loc]::M *)
-            (Sonata.PUSH store_prev_condition_func)::
-            (Sonata.MALLOC)::(Sonata.BIND prev)::(Sonata.PUSH (Sonata.Id prev))::(Sonata.STORE)::(*prev_loc => <x, C, E>*)
-              (Sonata.UNBIND)::(Sonata.BOX 1)::(* [("prev", prev_loc)]::S *)
-              (Sonata.PUSH (Sonata.Id store_prev_fun))::(Sonata.STORE)::[](* "store_prev_fun" => store_loc => [("prev", prev_loc)] *)
+      [  
+        Sonata.PUSH (Sonata.Id store_prev_fun);
+        Sonata.LOAD;(*["prev", prev_loc]::S*) 
+        Sonata.MALLOC;
+        Sonata.BIND tmp_store_prev_fun;
+        Sonata.PUSH (Sonata.Id tmp_store_prev_fun);
+        Sonata.STORE;(*"tmp" => tmp_loc => ["prev", prev_loc]::M *)
+        Sonata.PUSH store_prev_condition_func;
+        Sonata.MALLOC;
+        Sonata.BIND prev;
+        Sonata.PUSH (Sonata.Id prev);
+        Sonata.STORE;(*prev_loc => <x, C, E>*)
+        Sonata.UNBIND;
+        Sonata.BOX 1;(* [("prev", prev_loc)]::S *)
+        Sonata.PUSH (Sonata.Id store_prev_fun);
+        Sonata.STORE
+      ](* "store_prev_fun" => store_loc => [("prev", prev_loc)] *)
   and store_prev_condition : Sm5.command -> Sonata.command =
     fun sm5_cmds ->
       let stored_cmds = (trans' sm5_cmds 1) in 
-      (Sonata.PUSH (Sonata.Id tmp_store_prev_fun))::(Sonata.LOAD)::
-        (Sonata.PUSH (Sonata.Id store_prev_fun))::(Sonata.STORE)::(* recover box first *)
-          (Sonata.UNBIND)::(Sonata.POP)::
-            stored_cmds
+      [
+        Sonata.PUSH (Sonata.Id tmp_store_prev_fun);
+        Sonata.LOAD;
+        Sonata.PUSH (Sonata.Id store_prev_fun);
+        Sonata.STORE;(* recover box first *)
+        Sonata.UNBIND;
+        Sonata.POP;
+      ]@stored_cmds
   
       
   (* set #box for key invariant. #box is always in env 
@@ -94,10 +111,17 @@ exception Error of string
       fun command -> 
         let end_fun = (Sonata.Fn ("#prev_arg", [])) in
         (*let special_loc = alloc_special_loc() in*)
-        (Sonata.PUSH end_fun)::(Sonata.MALLOC)::(Sonata.BIND prev)::(Sonata.PUSH (Sonata.Id prev))::(* dirty env *)
-          (Sonata.STORE)::(* prev_loc => <x, C, E> *)
-            (Sonata.UNBIND)::(* remain env intact .... ("prev", prev_loc)::S *)
-              (Sonata.BOX 1)::(* [("prev", prev_loc)]::S *)
-              (Sonata.MALLOC)::(Sonata.BIND store_prev_fun)::(*"store_prev_fun" => store_loc*)
-                (Sonata.PUSH (Sonata.Id store_prev_fun))::(Sonata.STORE)::(* "store_prev_fun" => store_loc => [("prev", prev_loc)] *)
-                (trans' command 1)
+        [
+          Sonata.PUSH end_fun;
+          Sonata.MALLOC;
+          Sonata.BIND prev;
+          Sonata.PUSH (Sonata.Id prev);(* dirty env *)
+          Sonata.STORE;(* prev_loc => <x, C, E> *)
+          Sonata.UNBIND;(* remain env intact .... ("prev", prev_loc)::S *)
+          Sonata.BOX 1;(* [("prev", prev_loc)]::S *)
+          Sonata.MALLOC;
+          Sonata.BIND store_prev_fun;(*"store_prev_fun" => store_loc*)
+          Sonata.PUSH (Sonata.Id store_prev_fun);
+          Sonata.STORE
+        ]@(trans' command 1)(* "store_prev_fun" => store_loc => [("prev", prev_loc)] *)
+                

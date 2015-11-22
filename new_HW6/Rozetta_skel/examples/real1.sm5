@@ -1,0 +1,42 @@
+[Sm5.PUSH(Sm5.Fn("x",
+  [  Sm5.BIND "next";
+  Sm5.PUSH(Sm5.Id "x");
+  Sm5.LOAD;
+  Sm5.PUSH(Sm5.Z 1);
+  Sm5.ADD;
+  Sm5.UNBIND;
+  Sm5.POP  ]));
+Sm5.BIND "next";
+Sm5.PUSH(Sm5.Z 0);
+Sm5.MALLOC;
+Sm5.BIND "z";
+Sm5.PUSH(Sm5.Id "z");
+Sm5.STORE;
+Sm5.GET;
+Sm5.PUSH(Sm5.Id "z");
+Sm5.STORE;
+Sm5.PUSH(Sm5.Id "z");
+Sm5.LOAD;
+Sm5.POP;
+Sm5.MALLOC;
+Sm5.BIND "temp_loc_#";
+Sm5.PUSH(Sm5.Id "next");
+Sm5.PUSH(Sm5.Id "next");
+Sm5.PUSH(Sm5.Id "z");
+Sm5.LOAD;
+Sm5.MALLOC;
+Sm5.CALL;
+Sm5.PUSH(Sm5.Id "temp_loc_#");
+Sm5.STORE;
+Sm5.PUSH(Sm5.Id "temp_loc_#");
+Sm5.LOAD;
+Sm5.PUT;
+Sm5.PUSH(Sm5.Id "temp_loc_#");
+Sm5.LOAD;
+Sm5.UNBIND;
+Sm5.POP;
+Sm5.UNBIND;
+Sm5.POP;
+Sm5.UNBIND;
+Sm5.POP]
+
