@@ -101,11 +101,17 @@ module M_SimChecker : M_SimTypeChecker = struct
 				unify (tau, tau')
 			| FN (x, e) ->
 				let alpha1 = V (new_id 1) in
-				let alpha2 = V (new_id 2) in
+				let alpha2 = V (new_id 1) in
 				let s = unify (Arrow(alpha1, alpha2), tau) in
 				let raw_updated_env = s_t s tyenv in
-				let update_env = update_env raw_updated_env x (s alpha1) in
-				let s' = m_algorithm (update_env, e, s alpha2) in
+				let updated_env = update_env raw_updated_env x (s alpha1) in
+				let s' = m_algorithm (updated_env, e, s alpha2) in
+				(s'_s s' s)
+			| APP (e1, e2) ->
+				let alpha = V (new_id 1) in
+				let s = m_algorithm (tyenv, e1, Arrow(alpha, tau)) in
+				let updated_env = s_t s tyenv in
+				let s' = m_algorithm (updated_env, e2, s alpha) in
 				(s'_s s' s)
 			| _ -> raise (TypeError "no checker")
 

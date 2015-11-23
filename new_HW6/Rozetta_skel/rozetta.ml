@@ -4,8 +4,6 @@
  * Jaeseung Choi (jschoi@ropas.snu.ac.kr)
  *)
 
-exception Error of string
-
   let dummy_arg = (Sonata.Val (Sonata.Z 0))
 
   let rec trans_value : Sm5.value -> Sonata.value =
