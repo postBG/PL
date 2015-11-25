@@ -159,7 +159,7 @@ module M_SimChecker : M_SimTypeChecker = struct
 			| BANG e ->
 				let (tau, s) = w_algorithm(tyenv, e) in
 				(match tau with
-					| Loc t -> (tau, s)
+					| Loc t -> (t, s)
 					| _ -> raise (TypeError "fail")
 				)
 			| SEQ(e1, e2) ->
