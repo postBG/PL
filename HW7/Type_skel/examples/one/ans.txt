@@ -1,0 +1,20 @@
+1. bool
+2. int
+3. error
+4. int
+5. error
+6. int
+7. error
+8. error
+9. int
+10. int
+11. int
+12. int
+13. int
+14. int
+15. int
+16. error
+17. (string, bool)
+18. error
+19. loc (bool, bool)
+20. int
