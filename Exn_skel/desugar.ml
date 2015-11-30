@@ -61,8 +61,32 @@ let rec cps exp =
   	let normal_form_e1 = App(App(cps_e1, k_of_cps_e1), h_of_cps_e1) in
   
   	Fn(k, Fn(h, normal_form_e1))
-  | If (e1, e2, e3) -> raise (Error "not implemented")
-  | Equal (e1, e2) -> raise (Error "not implemented")
+  | If (e1, e2, e3) ->
+  	let v1 = new_name() in 
+  	let v2 = new_name() in
+  	let v3 = new_name() in
+  	Fn(k, Fn(h,
+  		App(App(cps e1, 
+  			Fn(v1, 
+  				If (Var v1,
+  					App(App(cps e2, Fn(v2, App(Var k, Var v2))), Var h),
+  					App(App(cps e3, Fn(v3, App(Var k, Var v3))), Var h)
+  				)
+  			)), 
+  		Var h)
+  	))
+  | Equal (e1, e2) -> 
+  	let v1 = new_name() in
+  	let v2 = new_name() in
+
+  	Fn(k, Fn(h,
+  		App(App(cps e1, 
+  			Fn(v1, 
+  				App(App(cps e2, 
+  					Fn(v2, App(Var k, Equal(Var v1, Var v2)))), (* Fn with v2 is k of cps e2 *)
+  				Var h))), (* Fn with v1 is k of cps e1, Var h is h of cps e2 *)
+  		Var h) (* Var h is h of cps e2 *)
+  	))
   | Raise e -> Fn(k, Fn(h, App(App(cps e, Var h), Var h)))
   | Handle (e1, n, e2) -> 
   	let except = Num n in

@@ -1,0 +1,7 @@
+(((((((raise ((fn y => y) ((fn x => x) 1))) handle 1 (raise 2))
+handle 2 (raise 5))
+handle 3 13)
+handle 4 14)
+handle 5 15)
+handle 6 16)
+
