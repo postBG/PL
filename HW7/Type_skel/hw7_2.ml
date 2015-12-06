@@ -20,7 +20,7 @@ module M_PolyChecker : M_PolyChecker = struct
 
 	type mtype_scheme =
 		| Simple of mtype
-		| General of ((id list) * mtype)
+		| ForAll of ((id list) * mtype)
 
 	(* folded function *)
 	type tyenvironment = id -> mtype_scheme 
@@ -38,6 +38,13 @@ module M_PolyChecker : M_PolyChecker = struct
 			(fun x -> if x = id then ans_type_scheme else env x)
 
 	let rec empty_env = fun _ -> raise (TypeError "empty env")
+
+	let rec not_exist_in_env : tyenvironment -> id -> bool =
+		fun tyenv id ->
+			try 
+				let _ = tyenv id in
+				false
+			with TypeError _ -> true
 
 	let rec none : mtype -> mtype =
 		fun x -> x
@@ -145,12 +152,24 @@ module M_PolyChecker : M_PolyChecker = struct
 		fun omega ->
 			match omega with
 			| Simple tau -> IdSet.elements (collect_ftv_in_simple tau)
-			| General (id_lst, tau) -> 
+			| ForAll (id_lst, tau) -> 
 					let ftv_tau = collect_ftv_in_simple tau in
 					let alphas = list2set id_lst in
 					IdSet.elements (IdSet.diff ftv_tau alphas)
 
+	let rec remove_ftv_env : tyenvironment -> id list -> id list =
+		fun tyenv ftv_omega ->
+			List.filter (fun x -> (not_exist_in_env tyenv x)) ftv_omega
 
+	let make_gen : tyenvironment -> mtype_scheme -> mtype_scheme =
+		fun tyenv omega ->
+			let ftv_omega = collect_ftv_of_scheme omega in
+			let gen_alphas = remove_ftv_env tyenv ftv_omega in
+			match omega with
+			| Simple tau -> ForAll (gen_alphas, tau)
+			| ForAll (alphas, tau) -> ForAll (gen_alphas, tau)
+
+	
 
 
   let check exp = raise (TypeError "no checker") (* TODO: implementation *)
