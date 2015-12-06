@@ -76,6 +76,14 @@ module M_PolyChecker : M_PolyChecker = struct
 	let rec s'_s : substitution -> substitution -> substitution =
 		fun s' s -> (fun mty -> s' (s mty))
 
+	let rec s_t : substitution -> tyenvironment -> tyenvironment =
+		fun s tyenv ->
+			(fun id -> 
+				match tyenv id with
+				| Simple tau -> Simple (s tau)
+				| ForAll (alphas, tau) -> ForAll (alphas, s tau)
+			)
+
 	let rec unify : (mtype * mtype) -> substitution =
 		fun tXt' ->
 			let (t, t') = tXt' in
@@ -170,7 +178,5 @@ module M_PolyChecker : M_PolyChecker = struct
 			| ForAll (alphas, tau) -> ForAll (gen_alphas, tau)
 
 	
-
-
   let check exp = raise (TypeError "no checker") (* TODO: implementation *)
 end
