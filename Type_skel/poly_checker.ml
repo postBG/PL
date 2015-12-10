@@ -103,8 +103,6 @@ let subst_env : subst -> typ_env -> typ_env =
     List.map (fun (x, tyscm) -> (x, subst_scheme subs tyscm)) tyenv
 
 (*---------------------------------------------------------------------*)
-let none = fun x -> x (* base subst *)
-
 let rec occurs : var -> typ -> bool =
   fun x t ->
     match t with
@@ -120,11 +118,11 @@ let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
     match (t, t') with
-    | (TInt, TInt) -> none
-    | (TBool, TBool) -> none
-    | (TString, TString) -> none
+    | (TInt, TInt) -> empty_subst
+    | (TBool, TBool) -> empty_subst
+    | (TString, TString) -> empty_subst
     | (TVar x, tau) ->
-      if t = t' then none
+      if t = t' then empty_subst
       else if (occurs x tau) then raise (M.TypeError "fail: occur in tau")
       else make_subst x tau
     | (tau, TVar x) -> unify(t', t)
@@ -142,6 +140,194 @@ let rec unify : (typ * typ) -> subst =
 let write_var = ref []
 let eq_var = ref []
 
+let rec apply_env : typ_env -> M.id -> typ_scheme =
+  fun env x ->
+    try
+      List.assoc x env
+    with Not_found -> raise (M.TypeError ("fail: "^x^"is not in env"))
+
+let rec instantiate_alphas : var list -> typ -> typ =
+  fun alphas typ ->
+    match alphas with
+    | [] -> typ
+    | alpha::tail ->
+        let beta = (TVar (new_var())) in
+        let sub = make_subst alpha beta in
+        let new_typ = sub typ in
+        instantiate_alphas tail new_typ
+
+let rec inner_instantiate : typ_scheme -> typ =
+  fun typ_sch ->
+    match typ_sch with
+    | SimpleTyp t -> t
+    | GenTyp (alphas, t) -> instantiate_alphas alphas t
+
+let rec instantiate : typ_env -> M.id -> typ =
+  fun env x -> 
+    inner_instantiate (apply_env env x)
+
+let rec exclude_env_exist_alphas : typ_env -> typ_scheme -> typ_scheme =
+  fun env typ_sch ->
+    let ftv_scheme = ftv_of_scheme typ_sch in
+    let ftv_env = ftv_of_env env in 
+    let new_alphas = sub_ftv ftv_scheme ftv_env in 
+    match typ_sch with
+    | SimpleTyp tau -> GenTyp (new_alphas, tau)
+    | GenTyp (alphas, tau) -> GenTyp (new_alphas, tau)
+    
+
+let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
+  fun env exp tau ->
+    match exp with
+    | M.CONST (M.N n) -> unify (tau, TInt)
+    | M.CONST (M.B b) -> unify (tau, TBool)
+    | M.CONST (M.S s) -> unify (tau, TString)
+    | M.VAR id -> 
+        let new_typ = instantiate env id in 
+        unify (tau, new_typ)
+    | M.FN (id, e) ->
+        let alpha1 = TVar (new_var()) in
+        let alpha2 = TVar (new_var()) in
+        let s = unify (tau, TFun (alpha1, alpha2)) in
+        let new_elem = (id, SimpleTyp (s alpha1)) in
+        let new_env = new_elem::(subst_env s env) in
+        let s' = m_algorithm new_env e (s alpha2) in
+        (s' @@ s)
+    | M.APP (e1, e2) ->
+        let alpha = TVar (new_var()) in
+        let s = m_algorithm env e1 (TFun (alpha, tau)) in
+        let new_env = subst_env s env in
+        let s' = m_algorithm new_env e2 (s alpha) in
+        (s' @@ s)
+    | M.LET (M.VAL (id, e1), e2) ->
+        let alpha = TVar (new_var()) in
+        let s = m_algorithm env e1 alpha in
+        let gen_typ = generalize (subst_env s env) (s alpha) in
+        let new_env = (id, gen_typ)::(subst_env s env) in
+        let s' = m_algorithm new_env e2 (s tau) in
+        (s' @@ s)
+    | M.LET (M.REC (id, x, body), e2) ->
+        let e1 = M.FN (x, body) in
+        let alpha1 = TVar (new_var()) in
+        let alpha2 = TVar (new_var()) in
+
+        let gen_typ1 = generalize env (TFun (alpha1, alpha2)) in
+        let new_env1 = (id, gen_typ1)::env in 
+        let s = m_algorithm new_env1 e1 (TFun (alpha1, alpha2)) in
+
+        let gen_typ2 = subst_scheme s gen_typ1 in
+        let new_env2 = subst_env s env in
+        let gen_typ3 = exclude_env_exist_alphas new_env2 gen_typ2 in 
+        let new_env3 = (id, gen_typ3)::new_env2 in 
+        let s' = m_algorithm new_env3 e2 (s tau) in
+        (s' @@ s)
+    | M.IF (e1, e2, e3) ->
+        let s = m_algorithm env e1 TBool in 
+        let new_env1 = subst_env s env in 
+        let s' = m_algorithm new_env1 e2 (s tau) in
+        let new_env2 = subst_env s' new_env1 in 
+        let s'' = m_algorithm new_env2 e3 (s' (s tau)) in
+        (s'' @@ (s' @@ s))
+    | M.READ -> unify (tau, TInt)
+    | M.WRITE e ->
+        write_var := tau::(!write_var);
+        (m_algorithm env e tau)
+    | M.MALLOC e ->
+        let alpha = TVar (new_var()) in 
+        let s = unify (tau, TLoc alpha) in
+        let new_env = subst_env s env in 
+        let s' = m_algorithm new_env e (s alpha) in
+        (s' @@ s)
+    | M.ASSIGN (e1, e2) ->
+        let s = m_algorithm env e1 (TLoc tau) in 
+        let new_env = subst_env s env in
+        let s' = m_algorithm new_env e2 (s tau) in
+        (s' @@ s)
+    | M.BANG e -> m_algorithm env e (TLoc tau)
+    | M.SEQ (e1, e2) ->
+        let alpha = TVar (new_var()) in
+        let s = m_algorithm env e1 alpha in
+        let new_env = subst_env s env in 
+        let s' = m_algorithm new_env e2 (s tau) in
+        (s' @@ s)
+    | M.PAIR (e1, e2) ->
+        let alpha1 = TVar (new_var()) in
+        let alpha2 = TVar (new_var()) in
+        let s = unify (tau, TPair (alpha1, alpha2)) in
+        let new_env1 = subst_env s env in 
+        let s' = m_algorithm new_env1 e1 (s alpha1) in
+        let new_env2 = subst_env s' new_env1 in 
+        let s'' = m_algorithm new_env2 e2 (s' (s alpha2)) in
+        (s'' @@ (s' @@ s))
+    | M.FST e ->
+        let alpha = TVar (new_var()) in 
+        m_algorithm env e (TPair (tau, alpha))
+    | M.SND e ->
+        let alpha = TVar (new_var()) in 
+        m_algorithm env e (TPair (alpha, tau))    
+    | M.BOP (bop, e1, e2) ->
+        (match bop with
+        | M.ADD -> bop_check env e1 e2 tau TInt
+        | M.SUB -> bop_check env e1 e2 tau TInt
+        | M.AND -> bop_check env e1 e2 tau TBool
+        | M.OR -> bop_check env e1 e2 tau TBool
+        | M.EQ -> 
+            let alpha = TVar (new_var()) in
+            eq_var := alpha::(!eq_var);
+
+            let s = unify (tau, TBool) in
+            let new_env1 = subst_env s env in 
+            let s' = m_algorithm new_env1 e1 (s alpha) in
+            let new_env2 = subst_env s' new_env1 in
+            let s'' = m_algorithm new_env2 e2 (s' (s alpha)) in
+            (s'' @@ (s' @@ s))
+        )
+and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
+  fun env e1 e2 tau primitive ->
+    let s = unify (tau, primitive) in
+    let new_env1 = subst_env s env in 
+    let s' = m_algorithm new_env1 e1 (s primitive) in
+    let new_env2 = subst_env s' new_env1 in 
+    let s'' = m_algorithm new_env2 e2 (s' (s primitive)) in
+    (s'' @@ (s' @@ s)) 
+
+let rec no_error_write_var lst sub =
+    match lst with
+    | [] -> true
+    | hd::tail ->
+      (match (sub hd) with
+      | TInt -> true
+      | TBool -> true
+      | TString -> true
+      | _ -> false) && (no_error_write_var tail sub)
+
+let rec no_error_eq_var lst sub =
+    match lst with
+    | [] -> true
+    | hd::tail ->
+      (match (sub hd) with
+      | TInt -> true
+      | TBool -> true
+      | TString -> true
+      | TLoc ty -> true
+      | _ -> false) && (no_error_eq_var tail sub)
+
+let rec typ2type : typ -> M.typ =
+    fun typ ->
+    match typ with
+    | TVar id -> raise (M.TypeError "fail by TVar")
+    | TInt -> M.TyInt
+    | TBool -> M.TyBool
+    | TString -> M.TyString
+    | TPair(typ1, typ2) -> M.TyPair (typ2type typ1, typ2type typ2)
+    | TLoc typ' -> M.TyLoc (typ2type typ')
+    | TFun(typ1, typ2) -> raise (M.TypeError "fail by TFun")
+
 (* TODO : Implement this function *)
 let check : M.exp -> M.typ =
-  raise (M.TypeError "Type Checker Unimplemented")
+  fun exp ->
+    let alpha = TVar (new_var()) in 
+    let s = m_algorithm [] exp alpha in
+    if (no_error_eq_var !eq_var s) && (no_error_write_var !write_var s)
+    then typ2type (s alpha)
+    else raise (M.TypeError "fail with write var or eq var")
