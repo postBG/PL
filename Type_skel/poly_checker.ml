@@ -216,10 +216,11 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         let s' = m_algorithm new_env e2 (s alpha) in
         (s' @@ s)
     | M.LET (M.VAL (id, e1), e2) ->
+        let is_safe = not (expansive e1) in 
         let alpha = TVar (new_var()) in
         let s = m_algorithm env e1 alpha in
         let gen_typ = generalize (subst_env s env) (s alpha) in
-        let new_env = (id, gen_typ)::(subst_env s env) in
+        let new_env = (if is_safe then (id, gen_typ) else (id, SimpleTyp (s alpha)))::(subst_env s env) in
         let s' = m_algorithm new_env e2 (s tau) in
         (s' @@ s)
     | M.LET (M.REC (id, x, body), e2) ->
