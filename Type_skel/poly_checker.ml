@@ -166,15 +166,31 @@ let rec instantiate : typ_env -> M.id -> typ =
   fun env x -> 
     inner_instantiate (apply_env env x)
 
-let rec exclude_env_exist_alphas : typ_env -> typ_scheme -> typ_scheme =
-  fun env typ_sch ->
-    let ftv_scheme = ftv_of_scheme typ_sch in
-    let ftv_env = ftv_of_env env in 
-    let new_alphas = sub_ftv ftv_scheme ftv_env in 
-    match typ_sch with
-    | SimpleTyp tau -> GenTyp (new_alphas, tau)
-    | GenTyp (alphas, tau) -> GenTyp (new_alphas, tau)
-    
+let rec expansive : M.exp -> bool =
+  fun exp ->
+    match exp with
+    | M.CONST const -> false
+    | M.VAR id -> false
+    | M.FN (id, exp) -> false 
+    | M.APP (e1, e2) -> true
+    | M.LET (M.VAL (id, e1), e2) -> 
+        (expansive e1) || (expansive e2)
+    | M.LET (M.REC (id, x, body), e2) -> 
+        let e1 = M.FN (x, body) in 
+        (expansive e1) || (expansive e2)
+    | M.IF (e1, e2, e3) -> 
+        (expansive e1) || (expansive e2) || (expansive e3)
+    | M.BOP (bop, e1, e2) -> 
+        (expansive e1) || (expansive e2)
+    | M.READ -> false
+    | M.WRITE exp -> expansive exp
+    | M.MALLOC exp -> true       
+    | M.ASSIGN (e1, e2) -> (expansive e1) || (expansive e2)
+    | M.BANG exp -> expansive exp
+    | M.SEQ (e1, e2) -> (expansive e1) || (expansive e2)     
+    | M.PAIR (e1, e2) -> (expansive e1) || (expansive e2)
+    | M.FST exp -> (expansive exp)         
+    | M.SND exp -> (expansive exp)        
 
 let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
   fun env exp tau ->
@@ -208,17 +224,18 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         (s' @@ s)
     | M.LET (M.REC (id, x, body), e2) ->
         let e1 = M.FN (x, body) in
+        let is_safe = not (expansive e1) in
         let alpha1 = TVar (new_var()) in
         let alpha2 = TVar (new_var()) in
 
-        let gen_typ1 = generalize env (TFun (alpha1, alpha2)) in
-        let new_env1 = (id, gen_typ1)::env in 
-        let s = m_algorithm new_env1 e1 (TFun (alpha1, alpha2)) in
+        let new_typ = (TFun (alpha1, alpha2)) in
+        let gen_typ1 = generalize env new_typ in
+        let new_env1 = (if is_safe then (id, gen_typ1) else (id, SimpleTyp new_typ))::env in 
+        let s = m_algorithm new_env1 e1 new_typ in
 
-        let gen_typ2 = subst_scheme s gen_typ1 in
         let new_env2 = subst_env s env in
-        let gen_typ3 = exclude_env_exist_alphas new_env2 gen_typ2 in 
-        let new_env3 = (id, gen_typ3)::new_env2 in 
+        let gen_typ2 = generalize new_env2 (s new_typ) in 
+        let new_env3 = (if is_safe then (id, gen_typ2) else (id, SimpleTyp (s new_typ)))::new_env2 in 
         let s' = m_algorithm new_env3 e2 (s tau) in
         (s' @@ s)
     | M.IF (e1, e2, e3) ->
