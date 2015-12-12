@@ -24,11 +24,22 @@ type typ_scheme =
 
 type typ_env = (M.id * typ_scheme) list
 
+type subst = typ -> typ
+
 let count = ref 0 
 
 let new_var () = 
   let _ = count := !count +1 in
   "x_" ^ (string_of_int !count)
+
+let write_var = ref []
+let eq_var = ref []
+
+let rec apply_to_var_lst : typ list -> subst -> typ list =
+  fun typ_lst sub ->
+    match typ_lst with
+    | [] -> []
+    | hd :: tail -> (sub hd)::(apply_to_var_lst tail sub)
 
 (* Definitions related to free type variable *)
 
@@ -66,8 +77,6 @@ let generalize : typ_env -> typ -> typ_scheme = fun tyenv t ->
     GenTyp(ftv, t)
 
 (* Definitions related to substitution *)
-
-type subst = typ -> typ
 
 let empty_subst : subst = fun t -> t
 
@@ -137,30 +146,28 @@ let rec unify : (typ * typ) -> subst =
     | (TLoc tau1, TLoc tau2) -> unify(tau1, tau2)
     | _ -> raise (M.TypeError "fail: in unify")
 
-let write_var = ref []
-let eq_var = ref []
-
 let rec apply_env : typ_env -> M.id -> typ_scheme =
   fun env x ->
     try
       List.assoc x env
     with Not_found -> raise (M.TypeError ("fail: "^x^"is not in env"))
 
-let rec instantiate_alphas : var list -> typ -> typ =
-  fun alphas typ ->
+let rec instantiate_alphas : var list -> subst -> subst =
+  fun alphas s ->
     match alphas with
-    | [] -> typ
+    | [] -> s
     | alpha::tail ->
         let beta = (TVar (new_var())) in
         let sub = make_subst alpha beta in
-        let new_typ = sub typ in
-        instantiate_alphas tail new_typ
+        (instantiate_alphas tail sub) @@ s 
 
 let rec inner_instantiate : typ_scheme -> typ =
   fun typ_sch ->
     match typ_sch with
     | SimpleTyp t -> t
-    | GenTyp (alphas, t) -> instantiate_alphas alphas t
+    | GenTyp (alphas, t) -> 
+        let s = (instantiate_alphas alphas empty_subst) in
+        s t
 
 let rec instantiate : typ_env -> M.id -> typ =
   fun env x -> 
@@ -309,10 +316,26 @@ and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
     let s'' = m_algorithm new_env2 e2 (s' (s primitive)) in
     (s'' @@ (s' @@ s)) 
 
+let rec typ2string typ =
+    match typ with
+    | TInt -> "int"
+    | TBool -> "bool"
+    | TString -> "string"
+    | TVar id -> id
+    | TPair (t1,t2) -> "("^(typ2string t1)^","^(typ2string t2)^")"
+    | TFun (t1,t2) ->"("^(typ2string t1)^"=>"^(typ2string t2)^")"
+    | TLoc t1 -> "loc ("^(typ2string t1)^")"
+
+let rec print typ =
+  let str = typ2string typ in 
+  print_endline str
+
 let rec no_error_write_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
+      print_string "write: ";
+      print (sub hd);
       (match (sub hd) with
       | TInt -> true
       | TBool -> true
@@ -323,6 +346,8 @@ let rec no_error_eq_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
+      print_string "eq: ";
+      print (sub hd);
       (match (sub hd) with
       | TInt -> true
       | TBool -> true
