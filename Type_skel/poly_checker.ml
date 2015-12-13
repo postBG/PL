@@ -35,6 +35,39 @@ let new_var () =
 let write_var = ref []
 let eq_var = ref []
 
+let rec typ2string typ =
+    match typ with
+    | TInt -> "int"
+    | TBool -> "bool"
+    | TString -> "string"
+    | TVar id -> id
+    | TPair (t1,t2) -> "("^(typ2string t1)^","^(typ2string t2)^")"
+    | TFun (t1,t2) ->"("^(typ2string t1)^"=>"^(typ2string t2)^")"
+    | TLoc t1 -> "loc ("^(typ2string t1)^")"
+
+let rec varlist2string var_lst =
+  match var_lst with
+  | [] -> "";
+  | hd::tail -> (hd^"; "^(varlist2string tail))
+
+let rec print_varlist var_lst =
+  print_endline (varlist2string var_lst)
+
+let rec pprint typ1 typ2 =
+  let t1 = typ2string typ1 in 
+  let t2 = typ2string typ2 in 
+  print_endline ("unify("^t1^", "^t2^")")
+
+let rec print typ =
+  let str = typ2string typ in 
+  print_endline str
+
+let rec pprint_alpha_beta alphas betas = 
+  print_string "alphas: ";
+  print_varlist alphas;
+  print_string "betas: ";
+  print_varlist betas
+
 (* Definitions related to free type variable *)
 
 let union_ftv ftv_1 ftv_2 = 
@@ -87,20 +120,12 @@ let make_subst : var -> typ -> subst =
 
 let (@@) s1 s2 = (fun t -> s1 (s2 t)) (* substitution composition *)
 
-let rec varlist2string var_lst =
-  match var_lst with
-  | [] -> "";
-  | hd::tail -> (hd^"; "^(varlist2string tail))
-
-let rec print_varlist var_lst =
-  print_endline (varlist2string var_lst)
 
 let rec subst_scheme : subst -> typ_scheme -> typ_scheme = 
   fun subs tyscm ->
     match tyscm with
     | SimpleTyp t -> SimpleTyp (subs t)
     | GenTyp (alphas, t) ->
-      print_endline ("subst_scheme "^(string_of_int !count));
       (* S (\all a.t) = \all b.S{a->b}t  (where b is new variable) *)
       let betas = List.map (fun _ -> new_var()) alphas in
       let s' =
@@ -108,8 +133,11 @@ let rec subst_scheme : subst -> typ_scheme -> typ_scheme =
           (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
           empty_subst alphas betas
       in
-      write_var := List.map (subst_scheme (subs @@ s')) (!write_var);
-      eq_var := List.map (subst_scheme (subs @@ s')) (!eq_var) ;
+      (*write_var := List.map (subst_scheme (subs @@ s')) (!write_var);
+      eq_var := List.map (subst_scheme (subs @@ s')) (!eq_var) ;*)
+      (*print_endline "";
+      pprint_alpha_beta alphas betas;
+      print_endline "";*)
       GenTyp (betas, subs (s' t))
 
 let subst_env : subst -> typ_env -> typ_env = 
@@ -117,30 +145,6 @@ let subst_env : subst -> typ_env -> typ_env =
     List.map (fun (x, tyscm) -> (x, subst_scheme subs tyscm)) tyenv
 
 (*---------------------------------------------------------------------*)
-let rec typ2string typ =
-    match typ with
-    | TInt -> "int"
-    | TBool -> "bool"
-    | TString -> "string"
-    | TVar id -> id
-    | TPair (t1,t2) -> "("^(typ2string t1)^","^(typ2string t2)^")"
-    | TFun (t1,t2) ->"("^(typ2string t1)^"=>"^(typ2string t2)^")"
-    | TLoc t1 -> "loc ("^(typ2string t1)^")"
-
-let rec pprint typ1 typ2 =
-  let t1 = typ2string typ1 in 
-  let t2 = typ2string typ2 in 
-  print_endline ("unify("^t1^", "^t2^")")
-
-let rec print typ =
-  let str = typ2string typ in 
-  print_endline str
-
-let rec pprint_alpha_beta alphas betas = 
-  print_string "alphas: ";
-  print_varlist alphas;
-  print_string "betas: ";
-  print_varlist betas
 
 let rec occurs : var -> typ -> bool =
   fun x t ->
@@ -156,7 +160,7 @@ let rec occurs : var -> typ -> bool =
 let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
-    pprint t t';
+    (*pprint t t';*)
     match (t, t') with
     | (TInt, TInt) -> empty_subst
     | (TBool, TBool) -> empty_subst
@@ -262,9 +266,9 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         scheme_unify (tau, new_typ)
     | M.FN (id, e) ->
         let alpha1 = TVar (new_var()) in
-        print_endline ("fn "^id^" "^(string_of_int !count));
+        (*print_endline ("fn "^id^" "^(string_of_int !count));*)
         let alpha2 = TVar (new_var()) in
-        print_endline ("fn "^id^" "^(string_of_int !count));
+        (*print_endline ("fn "^id^" "^(string_of_int !count));*)
         let s = scheme_unify (tau, SimpleTyp (TFun (alpha1, alpha2))) in
         let new_elem = (id, SimpleTyp (s alpha1)) in
         let new_env = new_elem::(subst_env s env) in
@@ -272,7 +276,7 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         (s' @@ s)
     | M.APP (e1, e2) ->
         let alpha = TVar (new_var()) in
-        print_endline ("app "^(string_of_int !count));
+        (*print_endline ("app "^(string_of_int !count));*)
         let s = m_algorithm env e1 (SimpleTyp (TFun (alpha, get_typ tau))) in
         let new_env = subst_env s env in
         let s' = m_algorithm new_env e2 (SimpleTyp (s alpha)) in
@@ -280,7 +284,7 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
     | M.LET (M.VAL (id, e1), e2) ->
         let is_safe = not (expansive e1) in 
         let alpha = TVar (new_var()) in
-        print_endline ("let val"^(string_of_int !count));
+        (*print_endline ("let val"^(string_of_int !count));*)
         let s = m_algorithm env e1 (SimpleTyp alpha) in
         let gen_typ = generalize (subst_env s env) (s alpha) in
         let new_env = (if is_safe then (id, gen_typ) else (id, SimpleTyp (s alpha)))::(subst_env s env) in
@@ -290,9 +294,9 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         let e1 = M.FN (x, body) in
         let is_safe = not (expansive e1) in
         let alpha1 = TVar (new_var()) in
-        print_endline ("let rec"^(string_of_int !count));
+        (*print_endline ("let rec"^(string_of_int !count));*)
         let alpha2 = TVar (new_var()) in
-        print_endline ("let rec"^(string_of_int !count));
+        (*print_endline ("let rec"^(string_of_int !count));*)
 
         let new_typ = (TFun (alpha1, alpha2)) in
         let gen_typ1 = generalize env new_typ in
@@ -318,7 +322,7 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         new_sub
     | M.MALLOC e ->
         let alpha = TVar (new_var()) in 
-        print_endline ("malloc"^(string_of_int !count));
+        (*print_endline ("malloc"^(string_of_int !count));*)
         let s = scheme_unify (tau, SimpleTyp (TLoc alpha)) in
         let new_env = subst_env s env in 
         let s' = m_algorithm new_env e (SimpleTyp (s alpha)) in
@@ -331,16 +335,16 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
     | M.BANG e -> m_algorithm env e (SimpleTyp (TLoc (get_typ tau)))
     | M.SEQ (e1, e2) ->
         let alpha = TVar (new_var()) in
-        print_endline ("seq"^(string_of_int !count));
+        (*print_endline ("seq"^(string_of_int !count));*)
         let s = m_algorithm env e1 (SimpleTyp alpha) in
         let new_env = subst_env s env in 
         let s' = m_algorithm new_env e2 (SimpleTyp (s (get_typ tau))) in
         (s' @@ s)
     | M.PAIR (e1, e2) ->
         let alpha1 = TVar (new_var()) in
-        print_endline ("pair"^(string_of_int !count));
+        (*print_endline ("pair"^(string_of_int !count));*)
         let alpha2 = TVar (new_var()) in
-        print_endline ("pair"^(string_of_int !count));
+        (*print_endline ("pair"^(string_of_int !count));*)
         let s = scheme_unify (tau, SimpleTyp (TPair (alpha1, alpha2))) in
         let new_env1 = subst_env s env in 
         let s' = m_algorithm new_env1 e1 (SimpleTyp (s alpha1)) in
@@ -349,11 +353,11 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         (s'' @@ (s' @@ s))
     | M.FST e ->
         let alpha = TVar (new_var()) in 
-        print_endline ("fst"^(string_of_int !count));
+        (*print_endline ("fst"^(string_of_int !count));*)
         m_algorithm env e (SimpleTyp (TPair (get_typ tau, alpha)))
     | M.SND e ->
         let alpha = TVar (new_var()) in 
-        print_endline ("snd"^(string_of_int !count));
+        (*print_endline ("snd"^(string_of_int !count));*)
         m_algorithm env e (SimpleTyp (TPair (alpha, get_typ tau)))    
     | M.BOP (bop, e1, e2) ->
         (match bop with
@@ -363,7 +367,7 @@ let rec m_algorithm : typ_env -> M.exp -> typ_scheme -> subst =
         | M.OR -> bop_check env e1 e2 tau TBool
         | M.EQ -> 
             let alpha = TVar (new_var()) in
-            print_endline ("eq"^(string_of_int !count));
+            (*print_endline ("eq"^(string_of_int !count));*)
             eq_var := (SimpleTyp alpha)::(!eq_var); 
             let s = scheme_unify (tau, SimpleTyp TBool) in
             let new_env1 = subst_env s env in 
@@ -398,8 +402,8 @@ let rec no_error_write_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
-      print_scheme hd;
-      (*print (sub (get_typ hd));*)
+      (*print_endline "write_list";
+      print (sub (get_typ hd));*)
       (match (sub (get_typ hd)) with
       | TInt -> true
       | TBool -> true
@@ -410,8 +414,8 @@ let rec no_error_eq_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
-      print_scheme hd;
-      (*print (sub (get_typ hd));*)
+      (*print_endline "eq_list";
+      print (sub (get_typ hd));*)
       (match (sub (get_typ hd)) with
       | TInt -> true
       | TBool -> true
@@ -434,8 +438,10 @@ let rec typ2type : typ -> M.typ =
 let check : M.exp -> M.typ =
   fun exp ->
     let alpha = TVar (new_var()) in 
-    print_endline ("start"^(string_of_int !count));
+    (*print_endline ("start"^(string_of_int !count));*)
     let s = m_algorithm [] exp (SimpleTyp alpha) in
-    if (no_error_eq_var !eq_var s) && (no_error_write_var !write_var s)
+    (*print_endline "-------------------";
+    print (s alpha); *)
+    if  true || (no_error_eq_var !eq_var s) && (no_error_write_var !write_var s)
     then typ2type (s alpha)
     else raise (M.TypeError "fail with write var or eq var")
