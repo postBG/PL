@@ -147,13 +147,6 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme =
           (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
           empty_subst alphas betas
       in
-      (*pprint_alpha_beta alphas betas;
-      write_var := subst_typlist (subs@@s') (!write_var);
-      eq_var := subst_typlist (subs@@s') (!eq_var);
-      print_endline "";
-      print_typlist (!write_var);
-      print_typlist (!eq_var);
-      print_endline "";*)
       GenTyp (betas, subs (s' t))
 
 let subst_env : subst -> typ_env -> typ_env = 
@@ -175,7 +168,6 @@ let rec occurs : var -> typ -> bool =
 let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
-    print_unify t t';
     match (t, t') with
     | (TInt, TInt) -> empty_subst
     | (TBool, TBool) -> empty_subst
@@ -219,12 +211,6 @@ let rec instantiate : typ_scheme -> typ =
     | SimpleTyp t -> t
     | GenTyp (alphas, t) -> 
         let s = (instantiate_alphas alphas empty_subst) in
-        (*write_var := subst_typlist s (!write_var);
-        eq_var := subst_typlist s (!eq_var);
-        print_endline "";
-        print_typlist (!write_var);
-        print_typlist (!eq_var);
-        print_endline "";*)
         s t
 
 let rec expansive : M.exp -> bool =
@@ -369,8 +355,6 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         | M.AND -> bop_check env e1 e2 tau TBool
         | M.OR -> bop_check env e1 e2 tau TBool
         | M.EQ -> 
-            let alpha = TVar (new_var()) in
-
             let s = unify (tau, TBool) in
             let new_env1 = subst_env s env in 
 
