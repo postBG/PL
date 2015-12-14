@@ -168,6 +168,7 @@ let rec occurs : var -> typ -> bool =
 let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
+    (*print_unify t t';*)
     match (t, t') with
     | (TInt, TInt) -> empty_subst
     | (TBool, TBool) -> empty_subst
@@ -362,14 +363,15 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
             let s' = m_algorithm new_env1 e1 first_eq in
             let for_check_e1 = s' (s first_eq) in 
 
-            match for_check_e1 with
-              | TPair (t1, t2) -> raise (M.TypeError "equal check fail")
-              | TFun (t1, t2) -> raise (M.TypeError "equal check fail")
-              | _ ->
-                let new_env2 = subst_env s' new_env1 in
-                let s'' = m_algorithm new_env2 e2 for_check_e1 in
-                let sub = (s'' @@ (s' @@ s)) in 
-                sub  
+            (match for_check_e1 with
+            | TPair (t1, t2) -> raise (M.TypeError "equal check fail")
+            | TFun (t1, t2) -> raise (M.TypeError "equal check fail")
+            | _ ->
+              let new_env2 = subst_env s' new_env1 in
+              let s'' = m_algorithm new_env2 e2 for_check_e1 in
+              let sub = (s'' @@ (s' @@ s)) in 
+              sub  
+            )
         )
 and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
   fun env e1 e2 tau primitive ->
