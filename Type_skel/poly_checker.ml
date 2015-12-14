@@ -115,6 +115,8 @@ let generalize : typ_env -> typ -> typ_scheme = fun tyenv t ->
 
 type subst = typ -> typ
 
+let sub_list = ref [] 
+
 let rec subst_typlist : subst -> typ list -> typ list =
   fun sub typ_list -> List.map sub typ_list
 
@@ -145,9 +147,13 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme =
           (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
           empty_subst alphas betas
       in
-      pprint_alpha_beta alphas betas;
+      (*pprint_alpha_beta alphas betas;
       write_var := subst_typlist (subs@@s') (!write_var);
       eq_var := subst_typlist (subs@@s') (!eq_var);
+      print_endline "";
+      print_typlist (!write_var);
+      print_typlist (!eq_var);
+      print_endline "";*)
       GenTyp (betas, subs (s' t))
 
 let subst_env : subst -> typ_env -> typ_env = 
@@ -213,12 +219,12 @@ let rec instantiate : typ_scheme -> typ =
     | SimpleTyp t -> t
     | GenTyp (alphas, t) -> 
         let s = (instantiate_alphas alphas empty_subst) in
-        write_var := subst_typlist s (!write_var);
+        (*write_var := subst_typlist s (!write_var);
         eq_var := subst_typlist s (!eq_var);
         print_endline "";
         print_typlist (!write_var);
         print_typlist (!eq_var);
-        print_endline "";
+        print_endline "";*)
         s t
 
 let rec expansive : M.exp -> bool =
@@ -246,6 +252,21 @@ let rec expansive : M.exp -> bool =
     | M.PAIR (e1, e2) -> (expansive e1) || (expansive e2)
     | M.FST exp -> (expansive exp)         
     | M.SND exp -> (expansive exp)        
+
+let rec no_error_one_write_var : typ -> typ -> subst =
+  fun typ tau ->
+    match typ with
+    | TPair (t1, t2) -> raise (M.TypeError "write pair")
+    | TFun (t1, t2) -> raise (M.TypeError "write fun")
+    | TLoc t -> raise (M.TypeError "write loc")
+    | _ -> unify(typ, tau)
+
+let rec no_error_one_eq_var : typ -> typ -> subst =
+  fun typ tau ->
+    match typ with
+    | TPair (t1, t2) -> raise (M.TypeError "eq pair")
+    | TFun (t1, t2) -> raise (M.TypeError "eq fun")
+    | _ -> unify(typ, tau)
 
 let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
   fun env exp tau ->
@@ -304,9 +325,10 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         (s'' @@ (s' @@ s))
     | M.READ -> unify (tau, TInt)
     | M.WRITE e ->
-        let s = (m_algorithm env e tau) in
-        write_var := (s tau)::(!write_var);
-        s
+        let alpha = TVar (new_var()) in 
+        let s = (m_algorithm env e alpha) in
+        let for_check = s alpha in 
+        (no_error_one_write_var for_check tau)@@s
     | M.MALLOC e ->
         let alpha = TVar (new_var()) in 
         let s = unify (tau, TLoc alpha) in
@@ -351,12 +373,19 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
 
             let s = unify (tau, TBool) in
             let new_env1 = subst_env s env in 
-            let s' = m_algorithm new_env1 e1 (s alpha) in
-            let new_env2 = subst_env s' new_env1 in
-            let s'' = m_algorithm new_env2 e2 (s' (s alpha)) in
-            let sub = (s'' @@ (s' @@ s)) in 
-            eq_var := (sub alpha)::(!eq_var);
-            sub
+
+            let first_eq = TVar (new_var()) in
+            let s' = m_algorithm new_env1 e1 first_eq in
+            let for_check_e1 = s' (s first_eq) in 
+
+            match for_check_e1 with
+              | TPair (t1, t2) -> raise (M.TypeError "equal check fail")
+              | TFun (t1, t2) -> raise (M.TypeError "equal check fail")
+              | _ ->
+                let new_env2 = subst_env s' new_env1 in
+                let s'' = m_algorithm new_env2 e2 for_check_e1 in
+                let sub = (s'' @@ (s' @@ s)) in 
+                sub  
         )
 and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
   fun env e1 e2 tau primitive ->
@@ -366,6 +395,7 @@ and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
     let new_env2 = subst_env s' new_env1 in 
     let s'' = m_algorithm new_env2 e2 (s' (s primitive)) in
     (s'' @@ (s' @@ s)) 
+
 
 let rec no_error_write_var lst sub =
     match lst with
@@ -406,6 +436,6 @@ let check : M.exp -> M.typ =
   fun exp ->
     let alpha = TVar (new_var()) in 
     let s = m_algorithm [] exp alpha in
-    if (no_error_eq_var !eq_var s) && (no_error_write_var !write_var s)
+    if true 
     then typ2type (s alpha)
     else raise (M.TypeError "fail with write var or eq var")
