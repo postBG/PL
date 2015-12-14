@@ -74,6 +74,8 @@ let rec typlist2string typ_list =
 
 let rec print_typlist typ_list =
   print_endline ("typ list: "^(typlist2string typ_list))
+
+
 (*-------------------------------------*)
 
 (* Definitions related to free type variable *)
@@ -115,7 +117,13 @@ let generalize : typ_env -> typ -> typ_scheme = fun tyenv t ->
 
 type subst = typ -> typ
 
-let sub_list = ref [] 
+let rec not_exist_then_add : typ list -> subst -> typ list =
+  fun typ_list sub ->
+    match typ_list with
+    | [] -> []
+    | hd::tail ->
+        if List.mem (sub hd) typ_list then hd::(not_exist_then_add tail sub)
+        else (sub hd)::hd::(not_exist_then_add tail sub)
 
 let rec subst_typlist : subst -> typ list -> typ list =
   fun sub typ_list -> List.map sub typ_list
@@ -147,11 +155,14 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme =
           (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
           empty_subst alphas betas
       in
+      write_var := not_exist_then_add (!write_var) (subs@@s');
+      eq_var := not_exist_then_add (!eq_var) (subs@@s');
       GenTyp (betas, subs (s' t))
 
 let subst_env : subst -> typ_env -> typ_env = 
   fun subs tyenv ->
     List.map (fun (x, tyscm) -> (x, subst_scheme subs tyscm)) tyenv
+
 
 (*---------------------------------------------------------------------*)
 let rec occurs : var -> typ -> bool =
@@ -168,7 +179,6 @@ let rec occurs : var -> typ -> bool =
 let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
-    (*print_unify t t';*)
     match (t, t') with
     | (TInt, TInt) -> empty_subst
     | (TBool, TBool) -> empty_subst
@@ -176,7 +186,23 @@ let rec unify : (typ * typ) -> subst =
     | (TVar x, tau) ->
       if t = t' then empty_subst
       else if (occurs x tau) then raise (M.TypeError "fail: occur in tau")
-      else make_subst x tau
+      else 
+        (if List.mem t (!write_var) then
+          (match t' with
+          | TFun (t1, t2) -> raise (M.TypeError "fun write")
+          | TPair (t1, t2) -> raise (M.TypeError "pair write")
+          | TLoc t -> raise (M.TypeError "loc write")
+          | _ -> make_subst x tau
+          )
+        else if List.mem t (!eq_var) then
+          (match t' with
+          | TFun (t1, t2) -> raise (M.TypeError "eq fun")
+          | TPair (t1, t2) -> raise (M.TypeError "eq pair")
+          | _ -> make_subst x tau
+          )
+        else 
+          make_subst x tau
+        )
     | (tau, TVar x) -> unify(t', t)
     | (TFun (tau1, tau2), TFun (tau1', tau2')) ->
       let s = unify(tau1, tau1') in
@@ -196,7 +222,6 @@ let rec apply_env : typ_env -> M.id -> typ_scheme =
       List.assoc x env
     with Not_found -> raise (M.TypeError ("fail: "^x^"is not in env"))
 
-
 let rec instantiate_alphas : var list -> subst -> subst =
   fun alphas s ->
     match alphas with
@@ -212,6 +237,8 @@ let rec instantiate : typ_scheme -> typ =
     | SimpleTyp t -> t
     | GenTyp (alphas, t) -> 
         let s = (instantiate_alphas alphas empty_subst) in
+        write_var := not_exist_then_add (!write_var) s;
+        eq_var := not_exist_then_add (!eq_var) s;
         s t
 
 let rec expansive : M.exp -> bool =
@@ -315,7 +342,9 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         let alpha = TVar (new_var()) in 
         let s = (m_algorithm env e alpha) in
         let for_check = s alpha in 
-        (no_error_one_write_var for_check tau)@@s
+        let sub = (no_error_one_write_var for_check tau)@@s in 
+        write_var := (sub for_check)::(!write_var);
+        sub
     | M.MALLOC e ->
         let alpha = TVar (new_var()) in 
         let s = unify (tau, TLoc alpha) in
@@ -370,6 +399,7 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
               let new_env2 = subst_env s' new_env1 in
               let s'' = m_algorithm new_env2 e2 for_check_e1 in
               let sub = (s'' @@ (s' @@ s)) in 
+              eq_var := (sub for_check_e1)::(!eq_var);
               sub  
             )
         )
@@ -422,6 +452,6 @@ let check : M.exp -> M.typ =
   fun exp ->
     let alpha = TVar (new_var()) in 
     let s = m_algorithm [] exp alpha in
-    if true 
+    if true
     then typ2type (s alpha)
     else raise (M.TypeError "fail with write var or eq var")
