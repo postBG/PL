@@ -30,6 +30,52 @@ let new_var () =
   let _ = count := !count +1 in
   "x_" ^ (string_of_int !count)
 
+(*-------------------------------------*)
+let write_var = ref []
+let eq_var = ref []
+
+let rec typ2string typ =
+    match typ with
+    | TInt -> "int"
+    | TBool -> "bool"
+    | TString -> "string"
+    | TVar id -> id
+    | TPair (t1,t2) -> "("^(typ2string t1)^", "^(typ2string t2)^")"
+    | TFun (t1,t2) ->"("^(typ2string t1)^" => "^(typ2string t2)^")"
+    | TLoc t1 -> "loc ("^(typ2string t1)^")"
+
+let rec varlist2string var_lst =
+  match var_lst with
+  | [] -> ""
+  | hd::tail -> (hd^"; "^(varlist2string tail))
+
+let rec print_varlist var_lst =
+  print_endline (varlist2string var_lst)
+
+let rec print_unify typ1 typ2 =
+  let t1 = typ2string typ1 in 
+  let t2 = typ2string typ2 in 
+  print_endline ("unify("^t1^", "^t2^")")
+
+let rec print_typ typ =
+  let str = typ2string typ in 
+  print_endline str
+
+let rec pprint_alpha_beta alphas betas = 
+  print_string "alphas: ";
+  print_varlist alphas;
+  print_string "betas: ";
+  print_varlist betas
+
+let rec typlist2string typ_list =
+  match typ_list with
+  | [] -> ""
+  | hd::tail -> ((typ2string hd)^"; "^(typlist2string tail))
+
+let rec print_typlist typ_list =
+  print_endline ("typ list: "^(typlist2string typ_list))
+(*-------------------------------------*)
+
 (* Definitions related to free type variable *)
 
 let union_ftv ftv_1 ftv_2 = 
@@ -69,6 +115,9 @@ let generalize : typ_env -> typ -> typ_scheme = fun tyenv t ->
 
 type subst = typ -> typ
 
+let rec subst_typlist : subst -> typ list -> typ list =
+  fun sub typ_list -> List.map sub typ_list
+
 let empty_subst : subst = fun t -> t
 
 let make_subst : var -> typ -> subst = 
@@ -96,6 +145,9 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme =
           (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
           empty_subst alphas betas
       in
+      pprint_alpha_beta alphas betas;
+      write_var := subst_typlist (subs@@s') (!write_var);
+      eq_var := subst_typlist (subs@@s') (!eq_var);
       GenTyp (betas, subs (s' t))
 
 let subst_env : subst -> typ_env -> typ_env = 
@@ -117,6 +169,7 @@ let rec occurs : var -> typ -> bool =
 let rec unify : (typ * typ) -> subst =
   fun tXt' ->
     let (t, t') = tXt' in
+    print_unify t t';
     match (t, t') with
     | (TInt, TInt) -> empty_subst
     | (TBool, TBool) -> empty_subst
@@ -137,14 +190,13 @@ let rec unify : (typ * typ) -> subst =
     | (TLoc tau1, TLoc tau2) -> unify(tau1, tau2)
     | _ -> raise (M.TypeError "fail: in unify")
 
-let write_var = ref []
-let eq_var = ref []
 
 let rec apply_env : typ_env -> M.id -> typ_scheme =
   fun env x ->
     try
       List.assoc x env
     with Not_found -> raise (M.TypeError ("fail: "^x^"is not in env"))
+
 
 let rec instantiate_alphas : var list -> subst -> subst =
   fun alphas s ->
@@ -161,8 +213,13 @@ let rec instantiate : typ_scheme -> typ =
     | SimpleTyp t -> t
     | GenTyp (alphas, t) -> 
         let s = (instantiate_alphas alphas empty_subst) in
+        write_var := subst_typlist s (!write_var);
+        eq_var := subst_typlist s (!eq_var);
+        print_endline "";
+        print_typlist (!write_var);
+        print_typlist (!eq_var);
+        print_endline "";
         s t
-
 
 let rec expansive : M.exp -> bool =
   fun exp ->
@@ -215,10 +272,11 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         let s' = m_algorithm new_env e2 (s alpha) in
         (s' @@ s)
     | M.LET (M.VAL (id, e1), e2) ->
+        let is_safe = not (expansive e1) in
         let alpha = TVar (new_var()) in
         let s = m_algorithm env e1 alpha in
         let gen_typ = generalize (subst_env s env) (s alpha) in
-        let new_env = (id, gen_typ)::(subst_env s env) in
+        let new_env = (if is_safe then (id, gen_typ) else (id, SimpleTyp (s alpha)))::(subst_env s env) in
         let s' = m_algorithm new_env e2 (s tau) in
         (s' @@ s)
     | M.LET (M.REC (id, x, body), e2) ->
@@ -246,8 +304,9 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         (s'' @@ (s' @@ s))
     | M.READ -> unify (tau, TInt)
     | M.WRITE e ->
-        write_var := tau::(!write_var);
-        (m_algorithm env e tau)
+        let s = (m_algorithm env e tau) in
+        write_var := (s tau)::(!write_var);
+        s
     | M.MALLOC e ->
         let alpha = TVar (new_var()) in 
         let s = unify (tau, TLoc alpha) in
@@ -289,14 +348,15 @@ let rec m_algorithm : typ_env -> M.exp -> typ -> subst =
         | M.OR -> bop_check env e1 e2 tau TBool
         | M.EQ -> 
             let alpha = TVar (new_var()) in
-            eq_var := alpha::(!eq_var);
 
             let s = unify (tau, TBool) in
             let new_env1 = subst_env s env in 
             let s' = m_algorithm new_env1 e1 (s alpha) in
             let new_env2 = subst_env s' new_env1 in
             let s'' = m_algorithm new_env2 e2 (s' (s alpha)) in
-            (s'' @@ (s' @@ s))
+            let sub = (s'' @@ (s' @@ s)) in 
+            eq_var := (sub alpha)::(!eq_var);
+            sub
         )
 and bop_check : typ_env -> M.exp -> M.exp -> typ -> typ -> subst =
   fun env e1 e2 tau primitive ->
@@ -311,6 +371,7 @@ let rec no_error_write_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
+      (print_typ (sub hd));
       (match (sub hd) with
       | TInt -> true
       | TBool -> true
@@ -321,6 +382,7 @@ let rec no_error_eq_var lst sub =
     match lst with
     | [] -> true
     | hd::tail ->
+      (print_typ (sub hd));
       (match (sub hd) with
       | TInt -> true
       | TBool -> true
